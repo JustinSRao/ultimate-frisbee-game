@@ -12,6 +12,8 @@ import { TEAMS, TEAM_KEYS, teamLogo, DEFAULTS, SKIN_TONES, HAIR_COLORS, HAIR_STY
 import { MS_TO_MPH } from '../../shared/weather.js';
 import { discTopTexture, arrowTexture, drawPortrait } from './textures.js';
 import { voxelize, sampler } from './voxel.js';
+import { initModes } from './modes.js';
+import { initTouch } from './touch.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
@@ -173,6 +175,9 @@ let moveYaw = 0, wasDiscCam = false;
 function discCamActive(g) { return discCam && mode === 'play' && g && !g.autoHuman && !g.human.hasDisc && g.state !== 'goal' && g.state !== 'halftime' && g.state !== 'over'; }
 let previewView = null, previewOn = false;
 
+// the local player's team ("us"): HUD left side, good/bad callouts, results
+const myTeam = (g = game) => (g && g.human ? g.human.team : 0);
+let matchCtx = { kind: 'quick' }; // quick | custom | lobby | online | tourney | practice
 function sceneTeamDef(game, t) { return game.teams[t].kit || TEAMS[game.teams[t].key]; }
 
 function buildViews(g) {
@@ -196,7 +201,7 @@ function buildLabels(g) {
   const box = $('labels'); box.innerHTML = ''; labelEls.clear();
   if (g.autoHuman) return;
   for (const a of g.all) {
-    if (a.isHuman) continue;
+    if (a === g.human) continue;
     const el = document.createElement('div'); el.className = 'lab'; el.style.display = 'none';
     box.appendChild(el); labelEls.set(a, el);
   }
@@ -216,7 +221,7 @@ function updateLabels(g) {
     if (_v.z > 1 || _v.x < -1.1 || _v.x > 1.1 || _v.y < -1.1 || _v.y > 1.1) { el.style.display = 'none'; continue; }
     el.style.display = '';
     el.style.left = ((_v.x + 1) / 2 * w) + 'px'; el.style.top = ((1 - _v.y) / 2 * h) + 'px';
-    const txt = isMark ? 'YOUR MARK' : (friend ? a.name : '#' + a.number) + (friend && a.ai.state === 'cut' && g.offense === a.team ? ' ▲' : '');
+    const txt = isMark ? 'YOUR MARK' : (friend || (a.ctrl && a.isHuman) ? a.name : '#' + a.number) + (friend && a.ai.state === 'cut' && g.offense === a.team ? ' ▲' : '') + (a.ctrl && a.isHuman && a !== human ? ' ●' : '');
     const cls = 'lab' + (isMark ? ' mark' : '') + (a.callT > 0 ? ' call' : '');
     if (el._t !== txt) { el.textContent = txt; el._t = txt; }
     if (el.className !== cls) el.className = cls;
@@ -233,23 +238,23 @@ function setText(id, t) { if (hudCache[id] !== t) { $(id).textContent = t; hudCa
 
 function setupHUD(g) {
   hudCache = {};
-  const tL = TEAMS[g.teams[0].key], tR = TEAMS[g.teams[1].key];
+  const my = myTeam(g), tL = TEAMS[g.teams[my].key], tR = TEAMS[g.teams[1 - my].key];
   $('logoL').innerHTML = LOGO[tL.key]; $('logoR').innerHTML = LOGO[tR.key];
   setText('cityL', tL.city); setText('nameL', tL.name); setText('cityR', tR.city); setText('nameR', tR.name);
   $('sbL').style.background = `linear-gradient(180deg, ${tL.css}, ${tL.dark})`; $('sbR').style.background = `linear-gradient(180deg, ${tR.css}, ${tR.dark})`;
   $('scoreL').style.borderColor = tL.css; $('scoreR').style.borderColor = tR.css;
-  $('logoP').innerHTML = LOGO[g.teams[0].key];
+  $('logoP').innerHTML = LOGO[g.teams[my].key];
   const h = g.human;
   setText('pName', `#${h.number} ${h.name}`);
   setText('pRole', `${h.role.toUpperCase()} · ${h.build === 'taller' ? 'TALL' : 'SHORT'} · ${h.hand === 'right' ? 'RH' : 'LH'}`);
-  const pc = $('portrait'); const td = g.teams[0].kit;
+  const pc = $('portrait'); const td = g.teams[my].kit;
   drawPortrait(pc, { skinCss: h.skin, hairCss: h.hairColor, hair: h.hairStyle, jerseyCss: '#' + td.jersey.toString(16).padStart(6, '0'), panelCss: '#' + td.panel.toString(16).padStart(6, '0') });
-  $('hint').textContent = g.practice ? 'PRACTICE · ESC = MENU' : '';
+  $('hint').textContent = g.practice ? 'PRACTICE · ESC = MENU' : g.remote ? 'ONLINE · ROOM ' + (matchCtx.code || '') : '';
 }
 
 function idxOf(g, key) { return g.teams[0].key === key ? 0 : 1; }
 function updateHUD(g) {
-  const iS = 0, iB = 1; // your team on the left
+  const iS = myTeam(g), iB = 1 - iS; // your team on the left
   if (g.practice) { setText('scoreL', '–'); setText('scoreR', '–'); setText('half', 'PRACTICE'); setText('clock', '∞'); }
   else {
     setText('scoreL', String(g.teams[iS].score)); setText('scoreR', String(g.teams[iB].score));
@@ -259,7 +264,7 @@ function updateHUD(g) {
   }
   const offKey = g.teams[g.offense].key;
   setText('possTxt', g.practice ? 'PRACTICE MODE' : `POSSESSION: ${TEAMS[offKey].name}`);
-  setText('possArr', g.offense === 0 && !g.practice ? '◀' : ''); setText('possArr2', g.offense === 1 && !g.practice ? '▶' : '');
+  setText('possArr', g.offense === iS && !g.practice ? '◀' : ''); setText('possArr2', g.offense === iB && !g.practice ? '▶' : '');
   const cs = g.capState;
   let note = g.target !== g.origTarget ? `GAME TO ${g.target}` : '';
   if (cs.hard) note = 'HARD CAP · ' + note; else if (cs.pendingHard) note = 'HARD CAP ON'; else if (cs.soft) note = 'SOFT CAP · ' + note; else if (cs.pendingSoft) note = 'SOFT CAP ON'; else if (cs.pendingTime || cs.time) note = 'TIME CAP · ' + note;
@@ -312,7 +317,7 @@ function callout(text, kind = 'info', dur = 1.8) {
 // ---------------------------------------------------------------- events
 function onEvent(t, d) {
   switch (t) {
-    case 'callout': callout(d.text, d.kind, d.dur); break;
+    case 'callout': callout(d.text, d.fav !== undefined && d.fav !== null ? (d.fav === myTeam() ? 'good' : 'bad') : d.kind, d.dur); break;
     case 'throw': audio.play('release'); if (d.speed > 20) audio.play('flight'); if (d.isPull) stadium.cheer(0.45, 2); break;
     case 'huck': stadium.cheer(0.6, 2.5); audio.play('ooh'); break;
     case 'catch': audio.play('catch'); if (d.dive || d.high) { stadium.cheer(0.85, 2.5); audio.play('cheer', { v: 0.6 }); } break;
@@ -322,18 +327,18 @@ function onEvent(t, d) {
     case 'ground': audio.play('ground'); break;
     case 'goal':
       audio.play('cheer', { v: 1 }); audio.play('horn'); stadium.cheer(1, 4.5); stadium.wave(false);
-      { const g = game; stadium.setScoreboard(TEAMS[g.teams[0].key].name, TEAMS[g.teams[1].key].name, g.teams[0].score, g.teams[1].score, `${TEAMS[g.teams[d.team].key].name} SCORE!`); }
+      { const g = game; if (g && g.remote) { g.teams[0].score = d.scores ? d.scores[0] : g.teams[0].score; g.teams[1].score = d.scores ? d.scores[1] : g.teams[1].score; } stadium.setScoreboard(TEAMS[g.teams[0].key].name, TEAMS[g.teams[1].key].name, g.teams[0].score, g.teams[1].score, `${TEAMS[g.teams[d.team].key].name} SCORE!`); }
       break;
     case 'universe': audio.play('universe'); stadium.wave(true); stadium.cheer(0.9, 6); break;
     case 'halftime': audio.play('horn'); break;
     case 'stall': if (d.n >= 6) audio.play('stall', { n: d.n }); break;
-    case 'sfx': if (d.a && d.a.isHuman || !d.a) audio.play(d.s); break;
+    case 'sfx': if (!d.a || d.a === game.human) audio.play(d.s); break;
     case 'call': audio.play('call'); break;
-    case 'incoming': audio.play('call'); break;
+    case 'incoming': if (!d.receiver || d.receiver === game.human) audio.play('call'); break;
     case 'emote': stadium.cheer(1, 2.5); if (d.kind === 'dropkick' || d.kind === 'spike') audio.play('cheer', { v: 0.6 }); break;
     case 'turnover': stadium.cheer(0.5, 1.5); break;
     case 'point': cam.snap = true; break;
-    case 'pullReady': if (d.human) callout('YOUR PULL', 'info', 1.4); break;
+    case 'pullReady': if (d.puller ? d.puller === game.human : d.human) callout('YOUR PULL', 'info', 1.4); break;
     case 'over': audio.play('horn'); stadium.cheer(1, 8); setTimeout(showResults, 3200); break;
   }
 }
@@ -507,14 +512,14 @@ function drawSwipe(dt) {
 }
 
 // ---------------------------------------------------------------- game lifecycle
-function newGame(modeName) {
+function newGame(modeName, opts = {}) {
   if (attract) { attract = null; }
-  const settings = { ...store.settings };
-  game = new Game(settings, store.athlete, modeName, onEvent);
+  const settings = { ...store.settings, ...(opts.settings || {}) };
+  game = opts.remote ? opts.remote : new Game(settings, store.athlete, modeName, onEvent, { humans: opts.humans, localId: opts.localId });
   stadium.setField(game.field, game.weather.rain > 0.4);
   buildViews(game);
   setupHUD(game);
-  const d = game.teams[0].dir;
+  const d = game.teams[myTeam()].dir;
   cam.yaw = d > 0 ? 0 : Math.PI; cam.pitch = DEFAULT_PITCH; cam.snap = true;
   stadium.setScoreboard(TEAMS[game.teams[0].key].name, TEAMS[game.teams[1].key].name, 0, 0, 'WORLD ULTIMATE LEAGUE');
   stadium.wave(false);
@@ -538,11 +543,13 @@ function show(id) {
 }
 let returnTo = 'menuMain';
 
-function startMatch(kind) {
+// kind: 'match' | 'practice'. opts: { ctx, settings, humans, localId, remote, code, onOver }
+function startMatch(kind, opts = {}) {
   audio.init();
   save(store);
   mode = 'play'; paused = false;
-  newGame(kind);
+  matchCtx = { kind: opts.ctx || (kind === 'practice' ? 'practice' : 'quick'), code: opts.code, onOver: opts.onOver, opts: { ...opts, remote: null }, matchKind: kind };
+  newGame(kind, opts);
   show(null);
   $('hud').classList.add('on');
   $('lockTip').style.display = 'none';
@@ -551,6 +558,7 @@ function startMatch(kind) {
 function pause() {
   if (mode !== 'play') return;
   paused = true; swipe = null;
+  $('btnRestart').style.display = game && game.remote ? 'none' : '';
   if (document.pointerLockElement) try { document.exitPointerLock(); } catch (e) { }
   show('menuPause'); returnTo = 'menuPause';
 }
@@ -558,26 +566,43 @@ function resume() {
   paused = false; show(null); lastT = performance.now();
   tryLock();
 }
-function toMenu() {
+function toMenu(screen = 'menuMain') {
+  if (game && game.remote && game.session && matchCtx.kind === 'online') modes.leaveOnline();
   mode = 'menu'; paused = false;
   if (document.pointerLockElement) try { document.exitPointerLock(); } catch (e) { }
   $('hud').classList.remove('on');
   startAttract();
-  show('menuMain'); returnTo = 'menuMain';
+  show(screen); returnTo = screen === 'menuMain' ? 'menuMain' : returnTo;
   updateQuickSub();
+}
+// leave the match view but keep any online session (back to the lobby / bracket)
+function toScreen(screen) {
+  mode = 'menu'; paused = false;
+  if (document.pointerLockElement) try { document.exitPointerLock(); } catch (e) { }
+  $('hud').classList.remove('on');
+  startAttract();
+  show(screen);
 }
 function showResults() {
   if (!game || !game.over || mode !== 'play') return;
   if (document.pointerLockElement) try { document.exitPointerLock(); } catch (e) { }
   const g = game, w = g.winner;
-  const human = w === 0;
+  const human = w === myTeam(g);
   $('resTitle').textContent = `${TEAMS[g.teams[w].key].name} WIN${human ? ' — VICTORY!' : ''}`;
   $('resScore').textContent = `${TEAMS[g.teams[0].key].name} ${g.teams[0].score} – ${g.teams[1].score} ${TEAMS[g.teams[1].key].name} · game to ${g.target}`;
   const st = g.stats;
+  const my = myTeam(g);
   const rows = [['Your goals', st.humanGoals], ['Your assists', st.humanAssists], ['Your catches', st.humanCatches], ['Your throws', st.humanThrows],
-  ['Team completions', `${st.completions} / ${st.throws}`], ['Turnovers (you / them)', `${st.turnovers[0]} / ${st.turnovers[1]}`], ['Blocks (you / them)', `${st.blocks[0]} / ${st.blocks[1]}`],
+  ['Match completions', `${st.completions} / ${st.throws}`], ['Turnovers (you / them)', `${st.turnovers[my]} / ${st.turnovers[1 - my]}`], ['Blocks (you / them)', `${st.blocks[my]} / ${st.blocks[1 - my]}`],
   ['Real time played', `${Math.floor(g.clock / 60)}m ${Math.floor(g.clock % 60)}s`]];
   $('resStats').innerHTML = rows.map(r => `<div class="stat"><span>${r[0]}</span><b>${r[1]}</b></div>`).join('');
+  // buttons depend on where the match came from
+  const k = matchCtx.kind;
+  $('resBtns').innerHTML = k === 'tourney' ? '<button class="btn primary" data-act="tourneyContinue">CONTINUE TOURNAMENT</button>'
+    : k === 'online' ? '<button class="btn" data-act="menu">LEAVE ROOM</button><button class="btn primary" data-act="backToLobby">BACK TO LOBBY</button>'
+    : k === 'lobby' ? '<button class="btn" data-act="menu">MAIN MENU</button><button class="btn" data-act="backToLobby">LOBBY</button><button class="btn primary" data-act="restart">REMATCH</button>'
+    : '<button class="btn" data-act="menu">MAIN MENU</button><button class="btn primary" data-act="restart">REMATCH</button>';
+  if (matchCtx.onOver) { try { matchCtx.onOver(g); } catch (e) { console.error(e); } matchCtx.onOver = null; }
   show('results'); returnTo = 'results';
 }
 
@@ -706,17 +731,17 @@ document.addEventListener('click', (e) => {
   audio.init(); audio.play('ui');
   const act = b.dataset.act;
   switch (act) {
-    case 'quick': startMatch('match'); break;
-    case 'setup': buildSetup(); show('menuSetup'); break;
-    case 'start': startMatch('match'); break;
+    case 'quick': startMatch('match', { ctx: 'quick' }); break;
+    case 'setup': case 'custom': modes.openCustom(); break;
     case 'practice': startMatch('practice'); break;
     case 'athlete': buildAthlete(); show('menuAthlete'); rebuildPreview(); break;
     case 'settings': buildSettings(); show('menuSettings'); break;
     case 'controls': show('menuControls'); break;
-    case 'back': show(mode === 'play' && paused ? 'menuPause' : returnTo === 'results' ? 'results' : 'menuMain'); if (previewView) previewView.root.visible = false; break;
+    case 'back': show(mode === 'play' && paused ? 'menuPause' : returnTo === 'results' ? 'results' : modes.backTarget() || 'menuMain'); if (previewView) previewView.root.visible = false; break;
     case 'resume': resume(); break;
-    case 'restart': startMatch(game && game.practice ? 'practice' : 'match'); break;
+    case 'restart': if (game && game.remote) break; startMatch(matchCtx.matchKind || (game && game.practice ? 'practice' : 'match'), { ...(matchCtx.opts || {}), ctx: matchCtx.kind }); break;
     case 'menu': toMenu(); break;
+    default: modes.onAct(act, b); break;
   }
 });
 canvas.addEventListener('click', () => { if (mode === 'play' && !paused && !locked) tryLock(); });
@@ -842,6 +867,7 @@ function syncViews(g, dt, alpha) {
 }
 
 // ---------------------------------------------------------------- main loop
+let touchCtl = null;
 function readInput() {
   const f = (keys.has('w') ? 1 : 0) - (keys.has('s') ? 1 : 0);
   const r = (keys.has('d') ? 1 : 0) - (keys.has('a') ? 1 : 0);
@@ -856,6 +882,8 @@ function readInput() {
   const l = Math.hypot(mx, mz); if (l > 1) { mx /= l; mz /= l; }
   input.mx = mx; input.mz = mz; input.sprint = sprintLatched && keys.has('w');
   input.aimYaw = cam.yaw;
+  input.tw = swipe ? swipe.kind : null; input.tww = game && game.human && game.human.throwAnim ? game.human.throwAnim.w || 0 : 0;
+  if (touchCtl) touchCtl.apply(input, by);
 }
 
 function frame(now) {
@@ -863,8 +891,13 @@ function frame(now) {
   let dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
   const g = game;
   if (!g) return;
-  const running = (mode === 'menu' ? !previewOn : !paused) && !window.__freezeSim;
-  if (running) {
+  const running = g.remote ? true : (mode === 'menu' ? !previewOn : !paused) && !window.__freezeSim;
+  if (g.remote) {
+    readInput();
+    g.update(Math.min(dt, 0.1), mode === 'play' && !paused ? input : null);
+    input.jump = false; input.dive = false; input.call = false;
+    simTime += dt; acc = 0;
+  } else if (running) {
     acc += dt;
     let steps = 0;
     readInput();
@@ -908,8 +941,20 @@ function frame(now) {
   if (document.visibilityState === 'visible') adapt(dt);
 }
 
+// ---------------------------------------------------------------- app api for menus/modes/touch
+const app = {
+  store, audio, save, show, startMatch, toMenu, toScreen, callout, buildSetup, onEvent, rebuildStadium, applyQuality,
+  get game() { return game; }, get mode() { return mode; }, get paused() { return paused; }, get matchCtx() { return matchCtx; },
+  get swipe() { return swipe; }, set swipe(v) { swipe = v; }, finishSwipe: () => finishSwipe(), cam, input, keys, pause, resume,
+  toggleDiscCam() { discCam = !discCam; callout(discCam ? 'DISC CAM ON' : 'DISC CAM OFF', 'info', 0.8); },
+  setSprintLatch(v) { sprintLatched = v; },
+  canvas,
+};
+const modes = initModes(app);
+
 // ---------------------------------------------------------------- boot
 function boot() {
+  touchCtl = initTouch(app);
   applyQuality();
   startAttract();
   updateQuickSub();
@@ -918,6 +963,6 @@ function boot() {
   requestAnimationFrame((t) => { lastT = t; frame(t); });
 }
 // expose for automated testing
-window.__ult = { dbg() { const out = []; for (const [a, el] of labelEls) { const v = views.get(a); v.headWorld(_v); const w = _v.clone(); _v.y += 0.45; _v.project(camera); out.push([a.name, a.team, w.x.toFixed(1), w.y.toFixed(1), w.z.toFixed(1), _v.x.toFixed(2), _v.y.toFixed(2), _v.z.toFixed(3)].join(',')); } return out; }, get game() { return game; }, startMatch, toMenu, pause, resume, analyzeSwipe, classify, cam, keys, input, get mode() { return mode; }, stadium: () => stadium, finishSwipeTest(kind, pts) { swipe = { kind, pts, vx: 0, vy: 0, ox: innerWidth / 2, oy: innerHeight / 2 }; game.human.throwAnim = { kind, stage: 'wind', w: 0.5 }; finishSwipe(); } };
+window.__ult = { dbg() { const out = []; for (const [a, el] of labelEls) { const v = views.get(a); v.headWorld(_v); const w = _v.clone(); _v.y += 0.45; _v.project(camera); out.push([a.name, a.team, w.x.toFixed(1), w.y.toFixed(1), w.z.toFixed(1), _v.x.toFixed(2), _v.y.toFixed(2), _v.z.toFixed(3)].join(',')); } return out; }, get game() { return game; }, startMatch, toMenu, pause, resume, analyzeSwipe, classify, cam, keys, input, get mode() { return mode; }, stadium: () => stadium, modes, app, get matchCtx() { return matchCtx; }, finishSwipeTest(kind, pts) { swipe = { kind, pts, vx: 0, vy: 0, ox: innerWidth / 2, oy: innerHeight / 2 }; game.human.throwAnim = { kind, stage: 'wind', w: 0.5 }; finishSwipe(); } };
 const fontLoad = (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load('800 20px "Saira Condensed"'), document.fonts.load('700 20px "Saira Condensed"')]).catch(() => { }) : Promise.resolve();
 Promise.race([fontLoad, new Promise(r => setTimeout(r, 2500))]).then(boot);

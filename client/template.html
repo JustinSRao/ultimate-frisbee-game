@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>World Ultimate League — Ultimate Frisbee</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a1430">
+<title>WUL Ultimate</title>
 <style>
 /*FONTS*/
 :root{--navy:#0a1a45;--navy2:#0f2668;--blue:#2f6cf0;--red:#e0322f;--gold:#ffd34d;--glass:rgba(8,20,58,.86);--line:rgba(120,160,255,.35);}
@@ -116,6 +118,83 @@ canvas#swipe{position:absolute;inset:0;width:100%;height:100%;pointer-events:non
 #loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#0a1430;font-size:28px;letter-spacing:3px;font-weight:800;z-index:9}
 #err{position:absolute;left:10px;bottom:10px;right:10px;color:#ffb4a8;font:12px monospace;white-space:pre-wrap;z-index:10;pointer-events:none}
 #lockTip{position:absolute;left:50%;top:58%;transform:translateX(-50%);font-size:18px;letter-spacing:2px;background:rgba(5,12,35,.75);padding:6px 16px;border-radius:4px;display:none}
+
+/* ---- main menu secondary buttons */
+.minirow{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.btn.mini{font-size:16px;padding:8px 12px;margin:0;text-align:center;letter-spacing:1.5px}
+.btn.mini:hover{transform:none}
+.err{color:#ff9d93;font-weight:700;letter-spacing:.5px;margin-top:8px;min-height:18px;font-size:15px}
+.ok{color:#8dffb0}
+.joinrow{display:flex;gap:8px;align-items:center;margin-top:10px}
+.joinrow input{font:800 24px "Saira Condensed",sans-serif;letter-spacing:6px;text-transform:uppercase;width:150px;background:#0c1d50;border:1px solid rgba(140,180,255,.5);color:#fff;padding:6px 10px;border-radius:5px;text-align:center}
+.joinrow .btn{width:auto;margin:0}
+/* ---- lobby */
+.card.wide{min-width:min(900px,96vw);max-width:96vw}
+.lobbycols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+.lteam{background:rgba(5,14,40,.55);border:1px solid var(--line);border-radius:8px;padding:8px}
+.lteam h3{display:flex;align-items:center;gap:8px;font-size:22px;letter-spacing:1px;margin-bottom:6px}
+.lteam h3 svg{width:34px;height:34px}.lteam h3 small{display:block;font-size:12px;opacity:.7;letter-spacing:1px}
+.slot{display:flex;align-items:center;gap:8px;width:100%;margin:4px 0;padding:6px 10px;border-radius:5px;border:1px solid rgba(140,180,255,.25);background:#0c1d50;color:#cfe0ff;font:700 16px "Saira Condensed",sans-serif;letter-spacing:1px;cursor:pointer;text-align:left;min-height:38px}
+.slot .n{opacity:.55;width:24px}.slot .tag{margin-left:auto;font-size:12px;opacity:.85;padding:1px 6px;border-radius:3px;background:rgba(255,255,255,.08)}
+.slot.human{background:#16357f;color:#fff;border-color:#7fa8ff}.slot.me{background:#2f6cf0;border-color:#cfe0ff}
+.slot.bot{opacity:.8}.slot.bot:hover{border-color:#9fc1ff;opacity:1}.slot.off .tag{background:#7a2a20}
+.slot[disabled]{cursor:default}
+.codebig{font-size:54px;letter-spacing:10px;color:var(--gold)}
+/* ---- bracket */
+.bracket{display:grid;grid-template-columns:repeat(4,1fr) .8fr;gap:10px;min-width:min(1100px,96vw);align-items:stretch}
+.bcol{display:flex;flex-direction:column;gap:4px}.bms{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:5px}
+.bcol h4{font-size:13px;letter-spacing:2px;opacity:.75;text-align:center}
+.bm{background:rgba(5,14,40,.7);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.bm.mine{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.bt{display:flex;align-items:center;gap:5px;padding:1px 6px;font-size:14px;font-weight:700;letter-spacing:.5px;min-height:22px}
+.bt svg{width:18px;height:18px;flex:none}.bt .sd{font-size:11px;opacity:.6;width:16px;text-align:right}.bt .sc{margin-left:auto;font-weight:800;min-width:18px;text-align:right}
+.bt.w{background:rgba(47,108,240,.35)}.bt.l{opacity:.5}.bt.me .nm{color:var(--gold)}
+.bt+.bt{border-top:1px solid rgba(255,255,255,.07)}
+.bt.tbd{opacity:.35}
+.champ{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px}
+.champ svg.cup{width:70px;height:70px}
+#simBar{height:8px;background:#0c1d50;border-radius:4px;overflow:hidden;margin-top:6px}#simBar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2f6cf0,#7fe0ff)}
+/* ---- champion */
+#menuChampion .card{text-align:center;min-width:min(520px,94vw)}
+#trophy{width:170px;height:170px;margin:4px auto;animation:trophy 1.6s ease-out both}
+@keyframes trophy{0%{transform:scale(.2) rotate(-25deg);opacity:0}60%{transform:scale(1.15) rotate(6deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+#confetti{position:absolute;inset:0;pointer-events:none}
+/* ---- touch controls */
+#touch{position:absolute;inset:0;pointer-events:none;display:none}
+#touch.on{display:block}
+#stick{position:absolute;left:calc(22px + env(safe-area-inset-left));bottom:calc(22px + env(safe-area-inset-bottom));width:150px;height:150px;border-radius:50%;background:rgba(10,25,70,.35);border:2px solid rgba(160,200,255,.45);pointer-events:auto;touch-action:none}
+#stickKnob{position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -31px;border-radius:50%;background:rgba(200,225,255,.55);border:2px solid #fff}
+#stick.sprint{border-color:#3fb6ff;box-shadow:0 0 16px #3fb6ff}
+.tbtn{position:absolute;pointer-events:auto;touch-action:none;width:68px;height:68px;border-radius:50%;background:rgba(10,25,70,.55);border:2px solid rgba(160,200,255,.6);color:#fff;font:800 14px "Saira Condensed",sans-serif;letter-spacing:1px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1}
+.tbtn:active,.tbtn.down{background:rgba(47,108,240,.75)}
+#tJump{right:calc(24px + env(safe-area-inset-right));bottom:calc(30px + env(safe-area-inset-bottom))}
+#tDive{right:calc(104px + env(safe-area-inset-right));bottom:calc(22px + env(safe-area-inset-bottom))}
+#tCall{right:calc(30px + env(safe-area-inset-right));bottom:calc(110px + env(safe-area-inset-bottom));width:56px;height:56px}
+#tCam{right:calc(24px + env(safe-area-inset-right));top:calc(120px + env(safe-area-inset-top));width:52px;height:52px;font-size:12px}
+#tFh{right:calc(184px + env(safe-area-inset-right));bottom:calc(26px + env(safe-area-inset-bottom));width:60px;height:60px}
+#tFh.fh{background:rgba(224,50,47,.75);border-color:#ffb0a8}
+#tPause{left:calc(12px + env(safe-area-inset-left));top:calc(10px + env(safe-area-inset-top));width:46px;height:46px;font-size:18px}
+#tEmotes{position:absolute;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translateX(-50%);display:none;gap:8px;pointer-events:auto}
+#tEmotes.on{display:flex}#tEmotes .tbtn{position:static;width:auto;min-width:64px;height:46px;border-radius:8px;padding:0 10px;font-size:13px}
+#rotate{position:absolute;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:#0a1430;font-size:26px;font-weight:800;letter-spacing:2px;text-align:center;padding:30px}
+body.touch #lockTip,body.touch #cross{display:none!important}
+body.touch #panel{transform:scale(.72);transform-origin:left top;left:calc(180px + env(safe-area-inset-left));bottom:auto;top:calc(8px + env(safe-area-inset-top));width:300px}
+body.touch #panel #portrait{display:none}
+body.touch #league,body.touch #hint{display:none}
+body.touch #score{transform:translateX(-50%) scale(.72);transform-origin:top center;top:calc(4px + env(safe-area-inset-top))}
+body.touch #poss{top:calc(48px + env(safe-area-inset-top));transform:translateX(-50%) scale(.8)}
+body.touch #capnote{top:calc(70px + env(safe-area-inset-top))}
+body.touch #wind{transform:scale(.7);transform-origin:top right;right:calc(8px + env(safe-area-inset-right));top:calc(6px + env(safe-area-inset-top));left:auto}
+body.touch #prompt{bottom:calc(6px + env(safe-area-inset-bottom));font-size:13px;max-width:46vw;text-align:center}
+body.touch #callout{font-size:30px}body.touch #callout.goal{font-size:54px}body.touch #callout.universe{font-size:40px}
+body.touch .btn{padding:12px 16px;min-height:48px}
+body.touch .seg button{padding:9px 13px;min-height:40px}
+body.touch .card{max-height:calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 8px);padding:14px 18px;margin:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+body.touch #menuMain{padding-left:calc(3vw + env(safe-area-inset-left))}
+body.touch .teamgrid{min-width:0;grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (orientation:portrait){body.phone #rotate{display:flex}}
+@media (max-width:820px){.lobbycols{grid-template-columns:1fr 1fr;gap:6px}.slot{font-size:13px;padding:4px 6px;min-height:34px}.bracket{grid-template-columns:repeat(4,1fr) .6fr;gap:4px}.bt{font-size:11px}.bt svg{display:none}.card.wide{padding:12px}}
+@media (max-height:800px){#menuBracket .bt{min-height:18px;font-size:13px;padding:0 6px}#menuBracket .big{font-size:26px;margin:0}#menuBracket .sub{margin-bottom:6px}#menuBracket .btn{padding:6px 12px;font-size:18px}#menuBracket .bms{gap:3px}}
 @media (max-width:1560px){#league{display:none}}
 @media (max-width:1280px){#wind{left:auto;right:14px;top:14px}}
 @media (max-width:1000px){#panel{width:290px;bottom:60px}#prompt{font-size:15px}.big{font-size:40px}}
@@ -163,20 +242,25 @@ canvas#swipe{position:absolute;inset:0;width:100%;height:100%;pointer-events:non
   <div class="screen on" id="menuMain"><div class="card" style="min-width:380px;max-width:430px">
     <div class="title">WORLD ULTIMATE LEAGUE · CHAMPIONSHIP</div>
     <div class="big" id="menuTitle">ULTIMATE<br><em>SKYLINE</em> vs BLAZE</div>
-    <div class="sub">Riverton Stadium · 16 teams · single-player vs bots</div>
+    <div class="sub">Riverton Stadium · 16 teams · play bots or friends online</div>
     <button class="btn primary" data-act="quick">QUICK MATCH <small id="quickSub">5v5 · 100 MIN</small></button>
-    <button class="btn" data-act="setup">MATCH VS BOTS <small>full setup</small></button>
-    <button class="btn" data-act="practice">PRACTICE <small>throw &amp; catch</small></button>
-    <button class="btn" data-act="athlete">ATHLETE CUSTOMIZATION</button>
-    <button class="btn" data-act="settings">SETTINGS · AUDIO · GRAPHICS</button>
-    <button class="btn" data-act="controls">CONTROLS</button>
+    <button class="btn" data-act="custom">CUSTOM MATCH <small>offline or online</small></button>
+    <button class="btn" data-act="tourney">TOURNAMENT <small>16-team bracket</small></button>
+    <div class="minirow">
+      <button class="btn mini" data-act="practice">PRACTICE</button>
+      <button class="btn mini" data-act="athlete">ATHLETE</button>
+      <button class="btn mini" data-act="settings">SETTINGS</button>
+      <button class="btn mini" data-act="controls">CONTROLS</button>
+    </div>
   </div></div>
 
   <!-- MATCH SETUP -->
   <div class="screen" id="menuSetup"><div class="card">
-    <div class="title">MATCH VS BOTS</div><div class="big" style="font-size:38px">GAME SETTINGS</div>
+    <div class="title" id="setupTitle">CUSTOM MATCH</div><div class="big" style="font-size:38px">GAME SETTINGS</div>
     <div id="setupRows"></div>
-    <div class="btnrow"><button class="btn" data-act="back">BACK</button><button class="btn primary" data-act="start">START GAME</button></div>
+    <div id="setupPlay"></div>
+    <div id="setupBtns"></div>
+    <div class="err" id="setupErr"></div>
   </div></div>
 
   <!-- ATHLETE -->
@@ -218,11 +302,57 @@ canvas#swipe{position:absolute;inset:0;width:100%;height:100%;pointer-events:non
     <div class="btnrow"><button class="btn" data-act="back">BACK</button></div>
   </div></div>
 
+
+  <!-- LOBBY (offline + online) -->
+  <div class="screen" id="menuLobby"><div class="card wide">
+    <div class="title" id="lobbyTitle">CUSTOM MATCH · OFFLINE LOBBY</div>
+    <div class="big" id="lobbyHead" style="font-size:38px">LOBBY</div>
+    <div class="sub" id="lobbySub"></div>
+    <div class="lobbycols"><div class="lteam" id="lobbyA"></div><div class="lteam" id="lobbyB"></div></div>
+    <div class="note" id="lobbyNote"></div>
+    <div class="err" id="lobbyErr"></div>
+    <div class="btnrow" id="lobbyBtns"></div>
+  </div></div>
+
+  <!-- TOURNAMENT SETUP -->
+  <div class="screen" id="menuTourney"><div class="card">
+    <div class="title">TOURNAMENT</div><div class="big" style="font-size:38px">16-TEAM BRACKET</div>
+    <div class="sub">Round of 16 → Quarterfinals → Semifinals → Final. Lose once and you're out.</div>
+    <div id="tourneyResume"></div>
+    <div id="tourneyRows"></div>
+    <div class="btnrow"><button class="btn" data-act="back">BACK</button><button class="btn primary" data-act="tourneyNew">START TOURNAMENT</button></div>
+    <div class="err" id="tourneyErr"></div>
+  </div></div>
+
+  <!-- BRACKET -->
+  <div class="screen" id="menuBracket"><div class="card wide" style="padding:16px 22px">
+    <div class="title" id="bracketTitle">TOURNAMENT</div>
+    <div class="big" id="bracketHead" style="font-size:34px">BRACKET</div>
+    <div class="sub" id="bracketSub"></div>
+    <div class="bracket" id="bracket"></div>
+    <div id="simWrap" style="display:none"><div class="note" id="simTxt">SIMULATING…</div><div id="simBar"><i></i></div></div>
+    <div class="err" id="bracketErr"></div>
+    <div class="btnrow" id="bracketBtns"></div>
+  </div></div>
+
+  <!-- CHAMPION -->
+  <div class="screen" id="menuChampion"><canvas id="confetti"></canvas><div class="card">
+    <div class="title">WORLD ULTIMATE LEAGUE</div>
+    <svg id="trophy" viewBox="0 0 100 100"><defs><linearGradient id="gold" x1="0" x2="1"><stop offset="0" stop-color="#b8860b"/><stop offset=".45" stop-color="#ffe27a"/><stop offset="1" stop-color="#c8960f"/></linearGradient></defs>
+      <path d="M28 12 H72 V30 C72 48 62 58 50 60 C38 58 28 48 28 30 Z" fill="url(#gold)" stroke="#6b4a00" stroke-width="2"/>
+      <path d="M28 18 C14 18 14 38 30 42 M72 18 C86 18 86 38 70 42" fill="none" stroke="url(#gold)" stroke-width="5"/>
+      <rect x="45" y="60" width="10" height="14" fill="url(#gold)"/><rect x="32" y="74" width="36" height="8" rx="2" fill="url(#gold)" stroke="#6b4a00"/>
+      <rect x="27" y="82" width="46" height="10" rx="2" fill="#3a2a10"/><ellipse cx="50" cy="28" rx="11" ry="4" fill="#fff" opacity=".85"/><ellipse cx="50" cy="27" rx="7" ry="2" fill="#dfe6f5"/></svg>
+    <div class="big" id="champHead">CHAMPIONS</div>
+    <div class="sub" id="champSub"></div>
+    <div class="btnrow"><button class="btn" data-act="menu">MAIN MENU</button><button class="btn" data-act="bracket">BRACKET</button><button class="btn primary" data-act="tourney">NEW TOURNAMENT</button></div>
+  </div></div>
+
   <!-- PAUSE -->
   <div class="screen" id="menuPause"><div class="card" style="min-width:360px">
     <div class="title">PAUSED</div><div class="big" style="font-size:40px">TIMEOUT</div>
     <button class="btn primary" data-act="resume">RESUME</button>
-    <button class="btn" data-act="restart">RESTART MATCH</button>
+    <button class="btn" data-act="restart" id="btnRestart">RESTART MATCH</button>
     <button class="btn" data-act="settings">SETTINGS</button>
     <button class="btn" data-act="controls">CONTROLS</button>
     <button class="btn" data-act="menu">RETURN TO MAIN MENU</button>
@@ -233,9 +363,21 @@ canvas#swipe{position:absolute;inset:0;width:100%;height:100%;pointer-events:non
     <div class="title">FINAL</div><div class="big" id="resTitle" style="font-size:44px">SKYLINE WIN</div>
     <div class="sub" id="resScore"></div>
     <div id="resStats"></div>
-    <div class="btnrow"><button class="btn" data-act="menu">MAIN MENU</button><button class="btn primary" data-act="restart">REMATCH</button></div>
+    <div class="btnrow" id="resBtns"><button class="btn" data-act="menu">MAIN MENU</button><button class="btn primary" data-act="restart">REMATCH</button></div>
   </div></div>
 
+
+  <div id="touch">
+    <div id="stick"><div id="stickKnob"></div></div>
+    <div class="tbtn" id="tJump">JUMP</div>
+    <div class="tbtn" id="tDive">DIVE</div>
+    <div class="tbtn" id="tCall">CALL</div>
+    <div class="tbtn" id="tFh">BH</div>
+    <div class="tbtn" id="tCam">DISC<br>CAM</div>
+    <div class="tbtn" id="tPause">II</div>
+    <div id="tEmotes"></div>
+  </div>
+  <div id="rotate">ROTATE YOUR PHONE<br>TO LANDSCAPE</div>
   <div id="loading">LOADING STADIUM…</div>
   <div id="err"></div>
 </div>

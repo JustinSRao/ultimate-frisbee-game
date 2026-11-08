@@ -60,6 +60,7 @@ export function snapshot(g, ev, acks) {
     over: g.over ? 1 : 0, winner: g.winner,
     a: g.all.map(athleteRow),
     ev: ev || [], ack: acks || {},
+    fs: g.over ? finalStats(g) : undefined,
   };
 }
 
