@@ -1,0 +1,42 @@
+// Cross-play check: a browser on the live Pages site hosts a room; the installed Windows app (launched with
+// WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9333) joins it; both play on the production server.
+const { chromium } = require('playwright');
+const SITE = process.argv[2] || 'https://wul-ultimate.pages.dev/';
+let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
+(async () => {
+  const web = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  const ctx = await web.newContext({ viewport: { width: 800, height: 450 } });
+  await ctx.addInitScript(() => { if (!localStorage.getItem('wul-ultimate-v1')) localStorage.setItem('wul-ultimate-v1', JSON.stringify({ athlete: { name: 'WEB HOST', number: 9 }, settings: { graphics: 'low' } })); });
+  const host = await ctx.newPage();
+  await host.goto(SITE);
+  await host.waitForFunction(() => window.__modes && document.getElementById('loading').style.display === 'none', null, { timeout: 120000 });
+  await host.evaluate(() => window.__modes.host('match'));
+  await host.waitForFunction(() => window.__modes.lobby && window.__modes.lobby.code, null, { timeout: 30000 });
+  const code = await host.evaluate(() => window.__modes.lobby.code);
+  ok(true, `browser (${SITE}) hosts room ${code}`);
+  const appB = await chromium.connectOverCDP('http://127.0.0.1:9333');
+  const app = appB.contexts()[0].pages()[0];
+  await app.waitForFunction(() => window.__ult && document.getElementById('loading').style.display === 'none', null, { timeout: 60000 });
+  ok(await app.evaluate(() => !!window.__TAURI__), 'attached to the installed Windows app (Tauri)');
+  await app.evaluate(() => { const A = window.__ult.app.store.athlete; A.name = 'WIN APP'; window.__ult.app.save(window.__ult.app.store); });
+  await app.evaluate((c) => window.__modes.join(c), code);
+  await host.waitForFunction(() => window.__modes.lobby.players.length === 2, null, { timeout: 30000 });
+  ok(true, 'Windows app joined the room');
+  await app.evaluate(() => window.__modes.session.pick(1, 0));
+  await host.waitForTimeout(800);
+  await app.screenshot({ path: 'shots/crossplay-app-lobby.png' });
+  await host.evaluate(() => window.__ult.modes.onAct('lobbyStart'));
+  for (const p of [host, app]) await p.waitForFunction(() => window.__ult.mode === 'play' && window.__ult.game.remote && window.__ult.game.snaps.length > 10, null, { timeout: 60000 });
+  ok(true, 'match running on both');
+  await app.waitForTimeout(8000);
+  const a = await app.evaluate(() => { const g = window.__ult.game, s = g.snaps[g.snaps.length - 1]; return { st: s.st, sc: s.sc.join('-'), me: g.human.name, team: g.human.team }; });
+  const h = await host.evaluate(() => { const g = window.__ult.game, s = g.snaps[g.snaps.length - 1]; return { st: s.st, sc: s.sc.join('-'), me: g.human.name, team: g.human.team }; });
+  console.log('  app', JSON.stringify(a), 'web', JSON.stringify(h));
+  ok(a.sc === h.sc && Math.abs(a.st - h.st) < 0.5, 'same score and server time on app and browser');
+  ok(a.me === 'WIN APP' && a.team === 1 && h.team === 0, 'app plays team 1, browser team 0');
+  await app.screenshot({ path: 'shots/crossplay-app-play.png' });
+  await app.evaluate(() => window.__ult.toMenu());
+  await host.evaluate(() => window.__ult.toMenu());
+  await appB.close(); await web.close();
+  console.log(fails ? `${fails} FAILED` : 'ALL PASSED'); process.exit(fails ? 1 : 0);
+})().catch(e => { console.error('ERR', e.message); process.exit(1); });
