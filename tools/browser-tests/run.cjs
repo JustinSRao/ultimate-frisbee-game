@@ -106,6 +106,62 @@ suite('tournament bracket', async (browser) => {
   await page.close();
 });
 
+suite('touch controls (iPhone)', async (browser) => {
+  const { devices } = require('playwright');
+  const iphone = devices['iPhone 13 landscape'] || { ...devices['iPhone 13'], viewport: { width: 844, height: 390 } };
+  const ctx = await browser.newContext({ ...iphone });
+  const page = await ctx.newPage();
+  const errs = [];
+  page.on('pageerror', e => errs.push(e.message));
+  await page.goto(URL, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.__ult && document.getElementById('loading').style.display === 'none', null, { timeout: 60000 });
+  const cdp = await ctx.newCDPSession(page);
+  const touch = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map((p, i) => ({ x: p[0], y: p[1], id: p[2] ?? i })) });
+  const env = await page.evaluate(() => ({ touch: document.body.classList.contains('touch'), phone: document.body.classList.contains('phone'), gfx: window.__ult.app.store.settings.graphics }));
+  ok(env.touch && env.phone, 'phone detected (touch UI + landscape-only)');
+  ok(env.gfx === 'low', 'phones default to Low graphics');
+  await page.screenshot({ path: 'shots/touch-menu.png' });
+  await page.evaluate(() => window.__ult.startMatch('match'));
+  await page.waitForFunction(() => window.__ult.game.state === 'live' && !window.__ult.game.human.hasDisc, null, { timeout: 60000 });
+  ok(await page.isVisible('#stick') && await page.isVisible('#tJump'), 'joystick and buttons visible in play');
+  await page.screenshot({ path: 'shots/touch-play.png' });
+  // joystick: push up for ~1.5 s
+  const sb = await page.$eval('#stick', el => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+  const p0 = await page.evaluate(() => ({ ...window.__ult.game.human.pos }));
+  await touch('touchStart', [[sb[0], sb[1], 1]]);
+  await touch('touchMove', [[sb[0], sb[1] - 45, 1]]);
+  await page.waitForTimeout(1500);
+  const st = await page.evaluate(() => window.__touch.state);
+  await touch('touchEnd', []);
+  const p1 = await page.evaluate(() => ({ ...window.__ult.game.human.pos }));
+  ok(st.vy < -0.5, 'stick reads forward');
+  ok(Math.hypot(p1.x - p0.x, p1.z - p0.z) > 0.8, `joystick moves the athlete (${Math.hypot(p1.x - p0.x, p1.z - p0.z).toFixed(1)} m)`);
+  // jump button
+  const jb = await page.$eval('#tJump', el => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+  await touch('touchStart', [[jb[0], jb[1], 2]]); await touch('touchEnd', []);
+  await page.waitForFunction(() => window.__ult.game.human.y > 0.05, null, { timeout: 5000 }).then(() => ok(true, 'jump button jumps'), () => ok(false, 'jump button jumps'));
+  // right-side drag looks around
+  const yaw0 = await page.evaluate(() => window.__ult.cam.yaw);
+  await touch('touchStart', [[650, 200, 3]]); for (let i = 1; i <= 6; i++) await touch('touchMove', [[650 - i * 20, 200, 3]]); await touch('touchEnd', []);
+  ok(Math.abs((await page.evaluate(() => window.__ult.cam.yaw)) - yaw0) > 0.2, 'drag on the right side turns the camera');
+  // swipe throw in practice (you start with the disc)
+  await page.evaluate(() => window.__ult.startMatch('practice'));
+  await page.waitForFunction(() => window.__ult.game.human.hasDisc, null, { timeout: 30000 });
+  await page.waitForTimeout(500);
+  await touch('touchStart', [[540, 250, 4]]);
+  for (let i = 1; i <= 8; i++) { await touch('touchMove', [[540 + i * 3, 250 - i * 20, 4]]); await page.waitForTimeout(16); }
+  await touch('touchEnd', []);
+  await page.waitForTimeout(300);
+  ok(await page.evaluate(() => window.__ult.game.stats.humanThrows === 1), 'swipe on the canvas throws the disc');
+  // portrait shows the rotate prompt
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(300);
+  ok(await page.isVisible('#rotate'), 'portrait shows "rotate your phone"');
+  await page.screenshot({ path: 'shots/touch-portrait.png' });
+  ok(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
+  await ctx.close();
+});
+
 const only = process.argv[2];
 (async () => {
   const browser = await chromium.launch({ args: ARGS });

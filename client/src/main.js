@@ -293,6 +293,8 @@ function updateHUD(g) {
   else if (g.dmode === 'air' && !h.hasDisc) pr = 'SPACE = JUMP · SHIFT = DIVE';
   else if (g.offense === h.team && g.dmode === 'held' && !g.practice) pr = h.callT > 0 ? 'CALLING FOR IT!' : 'Q = CALL FOR THE DISC';
   else if (g.offense !== h.team && !g.practice && h.ai.mark) pr = 'DEFENSE · STAY WITH YOUR MARK';
+  if (document.body.classList.contains('touch')) pr = pr.replace('SPACE = JUMP · SHIFT = DIVE', 'JUMP · DIVE').replace('Q = CALL FOR THE DISC', 'TAP CALL FOR THE DISC')
+    .replace('SWIPE: LEFT = BACKHAND · RIGHT = FOREHAND', 'SWIPE TO THROW · BH/FH BUTTON').replace(/^EMOTE: .*/, 'TAP AN EMOTE!');
   setText('prompt', pr);
   // incoming-pass indicator: an arrow around the crosshair pointing at the disc (relative to the camera)
   const inc = $('incoming');
