@@ -26,6 +26,11 @@ export const TEAMS = {
   crowns:   T('crowns',   'KINGSPORT',    'CROWNS',    'crown',   0x6d1530, 0xe8c35a, 0x3a0a18, 0x3a0a18, 0x6d1530, 0x3a0a18, '#e8c35a'),
 };
 export const TEAM_KEYS = Object.keys(TEAMS);
+// Strength ratings (Elo-style) used by the tournament's quick score model.
+export const TEAM_RATINGS = {
+  skyline: 1640, blaze: 1660, tide: 1600, summit: 1560, solar: 1530, timber: 1520, loons: 1580, mesa: 1500,
+  volt: 1620, reef: 1490, glacier: 1550, forge: 1570, comets: 1510, kestrels: 1590, owls: 1540, crowns: 1610,
+};
 
 // If two kits are too similar, the away side wears an alternate (dark body, light number).
 const lum = (c) => { const r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255; return 0.299 * r + 0.587 * g + 0.114 * b; };
@@ -88,7 +93,30 @@ export const DEFAULTS = {
   },
 };
 
-export const SKIN_TONES = ['#f6d3b8', '#e8b48f', '#c98d63', '#a46a43', '#7a4a2c', '#53311d'];
+// Match settings coming from another device (online rooms) are untrusted: keep only known keys/values.
+export function sanitizeSettings(s = {}, base = DEFAULTS.settings) {
+  const pick = (v, list, d) => list.includes(v) ? v : d;
+  const out = {
+    ...base,
+    teamSize: pick(s.teamSize, [2, 3, 4, 5, 6, 7], base.teamSize),
+    duration: pick(s.duration, [70, 100], base.duration),
+    rules: pick(s.rules, ['wfdf', 'usau', 'simple'], base.rules),
+    difficulty: pick(s.difficulty, ['easy', 'normal', 'hard'], base.difficulty),
+    team: pick(s.team, TEAM_KEYS, base.team),
+    opponent: pick(s.opponent, TEAM_KEYS, base.opponent),
+    weatherPreset: pick(s.weatherPreset, ['sunny', 'random', 'windy', 'rainy', 'custom'], base.weatherPreset),
+    wind: pick(s.wind, ['off', 'random', 'on', 'custom'], base.wind),
+    windDir: pick(s.windDir, WIND_DIRS, base.windDir),
+    windSpeed: pick(s.windSpeed, [3, 6, 10, 15, 20], base.windSpeed),
+    rain: pick(s.rain, ['off', 'random', 'on'], base.rain),
+    assist: pick(s.assist, ['assisted', 'semi', 'manual'], base.assist),
+    stallSeconds: pick(s.stallSeconds, [1, 1.25, 1.5], base.stallSeconds),
+  };
+  if (out.opponent === out.team) out.opponent = TEAM_KEYS[(TEAM_KEYS.indexOf(out.team) + 1) % TEAM_KEYS.length];
+  return out;
+}
+
+export const SKIN_TONES =['#f6d3b8', '#e8b48f', '#c98d63', '#a46a43', '#7a4a2c', '#53311d'];
 export const HAIR_COLORS = ['#2a1a10', '#4a2c16', '#0f0f12', '#8a5a2b', '#d9b26a', '#a33a1c', '#c9c9c9'];
 export const HAIR_STYLES = ['short', 'curly', 'buzz', 'ponytail', 'bun', 'long', 'mohawk'];
 export const WIND_DIRS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];

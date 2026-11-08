@@ -6,7 +6,7 @@ import { DiscState, launch, stepDisc, predict, solveThrow, noseFor } from './phy
 import { TEAMS, TEAM_KEYS, teamKit, kitsClash, FIELDS, makeAttrs, botNames, mulberry, SKIN_TONES, HAIR_COLORS, HAIR_STYLES } from './config.js';
 import { Weather } from './weather.js';
 import { updateAI, assignDefense, aiOnThrow } from './ai.js';
-import { accelStep } from './movement.js';
+import { accelStep, maxSpeedOf } from './movement.js';
 
 export const DT = 1 / 60;
 export const GOAL_CELEBRATION = 10; // seconds the scoring team celebrates (match clock is paused)
@@ -29,23 +29,19 @@ export class Athlete {
     this.want = { x: 0, z: 0, sprint: false, face: null }; // movement intent (world velocity dir * desired speed)
     this.ai = { state: 'idle', target: { x: 0, z: 0 }, timer: 0, mark: null, perceived: { x: 0, z: 0 }, react: 0, jumpPlan: null, decideT: 0 };
     this.recent = []; // recent positions for contact speed
+    this.stats = { goals: 0, assists: 0, catches: 0, throws: 0 };
   }
   get dir() { return this.game.teams[this.team].dir; }
-  maxSpeed(sprint) {
-    const a = this.attrs;
-    let s = sprint && this.sprintE > 1 ? a.sprint : a.run;
-    if (sprint && this.sprintTime > 2) s *= 1 + a.longRunBonus;
-    s *= 0.86 + 0.14 * (this.endur / 100);
-    if (this.game.weather.rain > 0.3) s *= 0.98; // slippery turf
-    return s;
-  }
+  maxSpeed(sprint) { return maxSpeedOf(this, sprint, this.game.weather.rain); }
 }
 
 export class Game {
-  constructor(settings, athleteCfg, mode, emit) {
+  // opts.humans: [{ id, team, slot, cfg }] (cfg = athlete customization). Default: one local human, team 0 slot 0.
+  // opts.localId: which human is `this.human` (the camera/HUD athlete on a client). opts.seed: rng seed.
+  constructor(settings, athleteCfg, mode, emit, opts = {}) {
     this.settings = settings; this.mode = mode; // 'match' | 'practice'
     this.emit = emit || (() => { });
-    this.rng = mulberry((Date.now() & 0xffff) + 7);
+    this.rng = mulberry(opts.seed ?? ((Date.now() & 0xffff) + 7));
     this.practice = mode === 'practice';
     const n = this.practice ? 3 : settings.teamSize;
     this.n = n;
@@ -62,7 +58,9 @@ export class Game {
     ];
     // build rosters
     const names = botNames(this.rng, 2 * n);
-    const usedNums = new Set([athleteCfg.number]);
+    const humanSpecs = (opts.humans && opts.humans.length ? opts.humans : [{ id: 'local', team: 0, slot: 0, cfg: athleteCfg }])
+      .filter(hs => !(this.practice && hs.team !== 0));
+    const usedNums = new Set(humanSpecs.map(hs => hs.cfg.number));
     const mkBot = (team, i) => {
       let num; do { num = 1 + Math.floor(this.rng() * 98); } while (usedNums.has(num)); usedNums.add(num);
       const handlerCount = n <= 3 ? 1 : n <= 5 ? 2 : 3;
@@ -75,15 +73,26 @@ export class Game {
         hairStyle: female ? ['ponytail', 'bun', 'long', 'short', 'curly'][Math.floor(this.rng() * 5)] : ['short', 'curly', 'buzz', 'mohawk', 'short'][Math.floor(this.rng() * 5)],
       });
     };
-    const human = new Athlete(this, 0, 0, {
-      isHuman: true, name: athleteCfg.name || 'PLAYER', number: athleteCfg.number, role: athleteCfg.role, build: athleteCfg.height,
-      gender: athleteCfg.gender, hand: athleteCfg.hand, skin: SKIN_TONES[athleteCfg.skin] || SKIN_TONES[2],
-      hairColor: HAIR_COLORS[athleteCfg.hairColor] || HAIR_COLORS[0], hairStyle: athleteCfg.hair,
-    });
-    this.human = human;
-    this.teams[0].athletes.push(human);
-    for (let i = 1; i < n; i++) this.teams[0].athletes.push(mkBot(0, i));
-    if (!this.practice) for (let i = 0; i < n; i++) this.teams[1].athletes.push(mkBot(1, i));
+    const mkHuman = (team, i, hs) => {
+      const c = hs.cfg || {};
+      return new Athlete(this, team, i, {
+        isHuman: true, ctrl: hs.id, name: String(c.name || 'PLAYER').slice(0, 14), number: c.number ?? 0, role: c.role === 'cutter' ? 'cutter' : 'handler',
+        build: c.height === 'shorter' ? 'shorter' : 'taller', gender: c.gender === 'female' ? 'female' : 'male', hand: c.hand === 'left' ? 'left' : 'right',
+        skin: SKIN_TONES[c.skin] || SKIN_TONES[2], hairColor: HAIR_COLORS[c.hairColor] || HAIR_COLORS[0], hairStyle: HAIR_STYLES.includes(c.hair) ? c.hair : 'short',
+      });
+    };
+    for (let t = 0; t < (this.practice ? 1 : 2); t++) {
+      const taken = new Map();
+      for (const hs of humanSpecs) if (hs.team === t) {
+        if (taken.size >= n) break;
+        let slot = clamp(hs.slot | 0, 0, n - 1);
+        while (taken.has(slot)) slot = (slot + 1) % n; // two humans asked for one slot: next free one
+        taken.set(slot, hs);
+      }
+      for (let i = 0; i < n; i++) this.teams[t].athletes.push(taken.has(i) ? mkHuman(t, i, taken.get(i)) : mkBot(t, i));
+    }
+    this.humans = this.teams.flatMap(t => t.athletes.filter(a => a.ctrl));
+    this.human = this.humans.find(a => a.ctrl === (opts.localId ?? 'local')) || this.humans[0] || this.teams[0].athletes[0];
     // bot roles: ensure handler count per team
     for (const t of this.teams) {
       const hc = n <= 3 ? 1 : n <= 5 ? 2 : 3;
@@ -120,7 +129,11 @@ export class Game {
     if (this.practice) this.startPractice(); else this.startPoint(0 /*receiving team*/);
   }
 
-  msg(text, kind = 'info', dur = 1.8) { this.emit('callout', { text, kind, dur }); }
+  // fav: the team this is good news for (clients colour it good/bad from their own side)
+  msg(text, kind = 'info', dur = 1.8, fav) {
+    if (fav !== undefined) kind = fav === 0 ? 'good' : 'bad';
+    this.emit('callout', { text, kind, dur, fav });
+  }
 
   // ------------------------------------------------------------------ points
   startPoint(receiving) {
@@ -147,7 +160,8 @@ export class Game {
     line(P, -P.dir * f.gl - P.dir * 0.5);
     // puller: human pulls on every other pull of the human team
     let puller;
-    if (pulling === 0 && this.pullCount % 2 === 0) puller = this.human;
+    const hp = P.athletes.filter(a => a.isHuman && !this.autoHuman);
+    if (hp.length && this.pullCount % 2 === 0) puller = hp[Math.floor(this.pullCount / 2) % hp.length];
     else puller = P.athletes.reduce((b, a) => (!a.isHuman && (!b || Math.abs(a.pos.x) < Math.abs(b.pos.x))) ? a : b, null);
     // put puller centered
     const swap = P.athletes.reduce((b, a) => Math.abs(a.pos.x) < Math.abs(b.pos.x) ? a : b);
@@ -178,7 +192,8 @@ export class Game {
   }
 
   // ------------------------------------------------------------------ main step
-  step(input) {
+  // input: the local human's input (single player). inputs: { [ctrlId]: input } for every human (online server).
+  step(input, inputs) {
     const dt = DT;
     this.time += dt; this.stateT += dt;
     this.weather.update(dt);
@@ -190,7 +205,7 @@ export class Game {
 
     switch (this.state) {
       case 'lineup':
-        if (this.stateT > 1.2) { this.state = 'pull'; this.stateT = 0; this.emit('pullReady', { human: this.puller.isHuman }); }
+        if (this.stateT > 1.2) { this.state = 'pull'; this.stateT = 0; this.emit('pullReady', { human: this.puller.isHuman, puller: this.puller }); }
         break;
       case 'pull':
         this.pullDeadline -= dt;
@@ -208,7 +223,8 @@ export class Game {
         break;
     }
     // human input
-    this.applyHuman(input, dt);
+    if (inputs) { for (const h of this.humans) if (h.isHuman) this.applyHuman(inputs[h.ctrl] || null, dt, h); }
+    else this.applyHuman(input, dt, this.human);
     // AI
     if (this.state !== 'over') updateAI(this, dt);
     // physics for athletes
@@ -229,9 +245,8 @@ export class Game {
   }
 
   // ------------------------------------------------------------------ human
-  applyHuman(inp, dt) {
-    const h = this.human;
-    if (this.autoHuman) return;
+  applyHuman(inp, dt, h = this.human) {
+    if (this.autoHuman || !h || !h.isHuman) return;
     if (!inp) { h.want.x = h.want.z = 0; return; }
     if (this.state === 'goal' || this.state === 'halftime' || this.state === 'over' || this.state === 'lineup') { h.want.x = h.want.z = 0; return; }
     h.want.sprint = inp.sprint;
@@ -252,20 +267,18 @@ export class Game {
       h.want.x = h.want.z = 0; h.want.face = inp.aimYaw;
     } else { h.lunge.x *= 0.8; h.lunge.z *= 0.8; h.pivotLunge = 0; }
     // keep players behind their line before the pull
-    if (inp.jump) this.humanJump();
-    if (inp.dive) this.humanDive(inp);
-    if (inp.call && !h.hasDisc && this.offense === h.team) { h.callT = 1.6; this.emit('call'); }
+    if (inp.jump) this.humanJump(h);
+    if (inp.dive) this.humanDive(inp, h);
+    if (inp.call && !h.hasDisc && this.offense === h.team) { h.callT = 1.6; this.emit('call', { a: h }); }
   }
 
-  humanJump() {
-    const h = this.human;
+  humanJump(h = this.human) {
     if (h.y > 0.01 || h.dive || h.recoverT > 0 || h.hasDisc) return;
     this.startJump(h);
   }
 
   // dive any time: in the direction you're steering, otherwise the way you're facing
-  humanDive(inp) {
-    const h = this.human;
+  humanDive(inp, h = this.human) {
     if (h.dive || h.recoverT > 0 || h.hasDisc || h.y > 0.3) return;
     if (this.state === 'lineup' || this.state === 'pull' || this.state === 'goal' || this.state === 'halftime' || this.state === 'over') return;
     let dx = inp.mx, dz = inp.mz;
@@ -424,17 +437,17 @@ export class Game {
     a.lunge.x = a.lunge.z = 0;
     this.stall = 0;
     this.stats.throws++;
-    if (a.isHuman) this.stats.humanThrows++;
+    a.stats.throws++;
+    if (a === this.human) this.stats.humanThrows++;
     this.emit('throw', { a, speed: p.speed, isPull: !!info.isPull, label: info.label });
-    if (this.throwInfo.receiver && this.throwInfo.receiver.isHuman && !info.isPull) this.emit('incoming', { from: a });
+    if (this.throwInfo.receiver && this.throwInfo.receiver.isHuman && !info.isPull) this.emit('incoming', { from: a, receiver: this.throwInfo.receiver });
     if (!info.isPull && p.speed > 22) this.emit('huck');
     aiOnThrow(this);
   }
 
   // Human swipe throw. sw = { kind, power 0..1, yawOffset (rad, + = right), curve:-1|0|1 (disc curve dir), loft (rad), label }
-  humanThrow(sw) {
-    const h = this.human;
-    if (!h.hasDisc) return;
+  humanThrow(sw, h = this.human) {
+    if (!h || !h.hasDisc) return;
     if (this.state === 'pull' && this.puller !== h) return;
     if (this.state !== 'live' && this.state !== 'pull') return;
     const isPull = this.state === 'pull';
@@ -709,7 +722,7 @@ export class Game {
     D.v.x = D.v.x * 0.2 + dir.x * 2; D.v.z = D.v.z * 0.2 + dir.z * 2; D.v.y = Math.min(D.v.y, -1.5) - this.rng() * 2;
     D.n.x += (this.rng() - 0.5); D.n.z += (this.rng() - 0.5);
     this.stats.blocks[a.team]++;
-    this.msg(isMark ? (a.dive ? 'HAND BLOCK ON THE MARK!' : 'MARK BLOCK!') : (a.dive ? 'LAYOUT BLOCK!' : 'BLOCK!'), a.team === this.human.team ? 'good' : 'bad');
+    this.msg(isMark ? (a.dive ? 'HAND BLOCK ON THE MARK!' : 'MARK BLOCK!') : (a.dive ? 'LAYOUT BLOCK!' : 'BLOCK!'), 'info', 1.8, a.team);
     this.emit('block', { a });
     if (a.dive) this.emit('layout', { a });
     this.predN = predict(D, this.weather.wind, this.pred, 4, 1 / 60, 2); this.predAge = 0;
@@ -739,21 +752,21 @@ export class Game {
     if (a.dive) this.emit('layout', { a });
     // receiver out of bounds?
     if (!foulAward && (Math.abs(a.pos.x) > f.hw || Math.abs(a.pos.z) > f.hl)) {
-      this.msg('OUT OF BOUNDS', 'bad');
+      this.msg('OUT OF BOUNDS', 'info', 1.8, 1 - a.team);
       const spot = { x: clamp(a.pos.x, -f.hw, f.hw), z: clamp(a.pos.z, -f.hl, f.hl) };
       if (wasPull) { this.turnTo(a.team, this.brickSpot(a.team), 'BRICK'); return; }
       this.turnTo(1 - a.team, spot);
       return;
     }
     if (off) {
-      if (!wasPull) { this.stats.completions++; if (a.isHuman) this.stats.humanCatches++; if (ti.from.isHuman) this.lastHumanThrowTo = a; }
+      if (!wasPull) { this.stats.completions++; a.stats.catches++; if (a === this.human) this.stats.humanCatches++; if (ti.from.isHuman) this.lastHumanThrowTo = a; }
       // goal?
       if (!wasPull && this.inAttackingEndzone(a)) { this.scoreGoal(a, ti.from); return; }
     } else {
       // interception (or simply receiving the pull)
       if (!wasPull) this.stats.turnovers[1 - a.team]++;
       if (!wasPull) {
-        this.msg(a.dive ? 'LAYOUT INTERCEPTION!' : 'INTERCEPTION!', a.team === 0 ? 'good' : 'bad');
+        this.msg(a.dive ? 'LAYOUT INTERCEPTION!' : 'INTERCEPTION!', 'info', 1.8, a.team);
         this.emit('turnover', { team: a.team });
       }
       this.offense = a.team;
@@ -784,7 +797,7 @@ export class Game {
     if (ti.isPull) {
       const rec = this.offense;
       const touchedByRec = ti.touched.some(a => a.team === rec);
-      if (touchedByRec) { this.msg('DROPPED PULL — TURNOVER', 'bad'); this.turnTo(1 - rec, { x: D.p.x, z: D.p.z }); return; }
+      if (touchedByRec) { this.msg('DROPPED PULL — TURNOVER', 'info', 1.8, 1 - rec); this.turnTo(1 - rec, { x: D.p.x, z: D.p.z }); return; }
       if (!inb) { this.msg('BRICK', 'info'); this.turnTo(rec, this.brickSpot(rec), null, true); return; }
       this.turnTo(rec, null, null, true);
       return;
@@ -797,10 +810,10 @@ export class Game {
     // turnover
     const newOff = 1 - ti.team;
     let spot = null;
-    if (!inb) { this.msg('OUT OF BOUNDS — TURNOVER', newOff === 0 ? 'good' : 'bad'); spot = { x: clamp(this.lastIn.x, -f.hw, f.hw), z: clamp(this.lastIn.z, -f.hl, f.hl) }; }
+    if (!inb) { this.msg('OUT OF BOUNDS — TURNOVER', 'info', 1.8, newOff); spot = { x: clamp(this.lastIn.x, -f.hw, f.hw), z: clamp(this.lastIn.z, -f.hl, f.hl) }; }
     else if (ti.blocked) { /* already announced */ }
-    else if (ti.touched.length) this.msg('DROP — TURNOVER', newOff === 0 ? 'good' : 'bad');
-    else this.msg('TURNOVER', newOff === 0 ? 'good' : 'bad');
+    else if (ti.touched.length) this.msg('DROP — TURNOVER', 'info', 1.8, newOff);
+    else this.msg('TURNOVER', 'info', 1.8, newOff);
     this.stats.turnovers[ti.team]++;
     this.emit('turnover', { team: newOff });
     this.turnTo(newOff, spot);
@@ -828,7 +841,7 @@ export class Game {
     for (const a of this.teams[team].athletes) { const d = hyp(a.pos.x - px, a.pos.z - pz); if (d < bd) { bd = d; best = a; } }
     this.picker = best;
     if (!this.practice) assignDefense(this, 1 - team);
-    if (best && best.isHuman && !quiet) this.emit('prompt', { text: 'PICK UP THE DISC' });
+    if (best && best.isHuman && !quiet) this.emit('prompt', { text: 'PICK UP THE DISC', a: best });
   }
 
   // ------------------------------------------------------------------ stall
@@ -849,7 +862,7 @@ export class Game {
     const after = Math.floor(this.stall);
     if (after !== before) this.emit('stall', { n: after, holder: h });
     if (this.stall >= 10) {
-      this.msg('STALL — TURNOVER', h.team === 0 ? 'bad' : 'good');
+      this.msg('STALL — TURNOVER', 'info', 1.8, 1 - h.team);
       this.stats.turnovers[h.team]++;
       const spot = { x: h.pos.x, z: h.pos.z };
       h.hasDisc = false; this.holder = null;
@@ -866,8 +879,9 @@ export class Game {
     this.state = 'goal'; this.stateT = 0; this.dmode = 'dead';
     this.lastScorer = scorer.team;
     this.give(scorer); this.dmode = 'dead';
-    if (scorer.isHuman) this.stats.humanGoals++;
-    if (assist && assist.isHuman) this.stats.humanAssists++;
+    scorer.stats.goals++; if (assist && assist !== scorer && assist.team === scorer.team) assist.stats.assists++;
+    if (scorer === this.human) this.stats.humanGoals++;
+    if (assist && assist === this.human && assist.team === scorer.team) this.stats.humanAssists++;
     for (const a of this.all) { a.anim = a.team === scorer.team ? 'celebrate' : 'dejected'; a.animT = GOAL_CELEBRATION; a.emote = null; }
     this.lastGoal = { scorer, assist: assist && assist !== scorer && assist.team === scorer.team ? assist : null };
     // bot scorers / assisters sometimes emote on their own
@@ -986,6 +1000,16 @@ export class Game {
     const totalMin = this.settings.rules === 'usau' ? this.hardCapMin : this.durationMin;
     const rem = Math.max(0, totalMin * 60 - this.clock * 5);
     return rem;
+  }
+
+  // Online: a disconnected human's athlete is driven by the AI until they reconnect.
+  setHumanControl(ctrlId, on) {
+    const a = this.humans.find(x => x.ctrl === ctrlId); if (!a || a.isHuman === on) return a || null;
+    a.isHuman = on;
+    a.want.x = a.want.z = 0; a.want.sprint = false; a.want.face = null; a.lookYaw = undefined;
+    a.ai.state = 'idle'; a.ai.plan = null; a.ai.decideT = 0;
+    if (a.throwAnim && a.throwAnim.stage === 'wind') a.throwAnim = null;
+    return a;
   }
 
   isUniverse() { return !this.practice && this.teams[0].score === this.target - 1 && this.teams[1].score === this.target - 1; }

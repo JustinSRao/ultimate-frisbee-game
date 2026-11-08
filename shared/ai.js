@@ -216,9 +216,11 @@ function startCut(g, a, A, nearGoal, stackX) {
   }
   if (Math.abs(t.x) > f.hw - 2) t.x = A.x - side * (5 + Math.random() * 3);
   inField(g, t, 1.5);
-  // avoid the human's space
-  const h = g.human;
-  if (h.team === a.team && hyp(h.pos.x - t.x, h.pos.z - t.z) < 5) t.x = clamp(t.x - Math.sign(h.pos.x - t.x || 1) * 6, -g.field.hw + 2, g.field.hw - 2);
+  // avoid the humans' space
+  for (const h of g.humans || [g.human]) {
+    if (!h || !ctl(g, h)) continue;
+    if (h.team === a.team && hyp(h.pos.x - t.x, h.pos.z - t.z) < 5) t.x = clamp(t.x - Math.sign(h.pos.x - t.x || 1) * 6, -g.field.hw + 2, g.field.hw - 2);
+  }
   ai.target = t; ai.state = 'cut'; ai.timer = 0; ai.deep = deep;
   team.cutToken = a;
 }
