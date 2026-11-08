@@ -25,9 +25,12 @@ suite('menu + quick match', async (browser) => {
   await page.waitForTimeout(1500);
   await page.screenshot({ path: 'shots/menu.png' });
   ok(await page.isVisible('#menuMain'), 'main menu visible');
-  await page.evaluate(() => window.__ult.startMatch('match'));
+  ok((await page.textContent('#quickSub')).includes('3v3') && (await page.textContent('#quickSub')).includes('EASY'), 'quick match label says 3v3 · EASY');
+  await page.click('[data-act="quick"]');
   await page.waitForTimeout(4000);
   const st = await page.evaluate(() => ({ state: window.__ult.game.state, mode: window.__ult.mode, t: window.__ult.game.time }));
+  const qs = await page.evaluate(() => ({ n: window.__ult.game.n, d: window.__ult.game.settings.difficulty }));
+  ok(qs.n === 3 && qs.d === 'easy', `quick match is 3v3 easy (${qs.n}v${qs.n} ${qs.d})`);
   ok(st.mode === 'play' && st.t > 0.3, `match running (state=${st.state}, t=${st.t.toFixed(1)})`);
   await page.screenshot({ path: 'shots/play.png' });
   ok(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs.join(' | ') : ''));

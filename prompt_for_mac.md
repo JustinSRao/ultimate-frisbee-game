@@ -117,7 +117,7 @@ npm ci && npx playwright install chromium
      If App Store Connect allows "Data Not Collected" because nothing leaves the device except to run the online match,
      discuss that with me first and pick the honest answer.
    - No tracking. No third-party SDKs. No ads.
-5. **Privacy policy URL:** `<pages-url>/privacy.html`. Support URL: the GitHub repo or the Pages URL.
+5. **Privacy policy URL:** `<pages-url>/privacy`. Support URL: the Pages URL (the repo is private). Support email: justinsheshagirirao@gmail.com.
 6. **Age rating questionnaire**, answered honestly:
    - The game is cartoon sports.
    - The "moon" emote counts as **"Cartoon or Fantasy Violence: None"** and **"Mature/Suggestive Themes: None"**, but
@@ -222,7 +222,7 @@ Mac (TestFlight) and Windows (installer)**. Include:
      team → play a round → the bracket updates for everyone
    - emotes (1–5 keys, or the emote buttons on touch) and disc cam (C, or the DISC CAM button) on each device
 5. **How to report bugs:** a screenshot or screen recording, the **room code**, the **time** (with time zone), the
-   device and OS, and what you expected versus what happened. File them as GitHub issues.
+   device and OS, and what you expected versus what happened. Email them to justinsheshagirirao@gmail.com.
 
 Commit, push, open the PR from `feat/apple` to `main`, and summarise:
 

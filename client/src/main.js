@@ -713,8 +713,10 @@ function onSettingsChanged() {
   if (game && mode === 'play') { game.settings.assist = store.settings.assist; game.settings.stallSeconds = store.settings.stallSeconds; }
   if (previewOn) { rebuildPreview(); updateAthNote(); }
 }
+// Quick Match is always a short, friendly game: 3v3 against easy bots (team, duration, weather etc. are your last-used settings)
+const QUICK = { teamSize: 3, difficulty: 'easy' };
 function updateQuickSub() {
-  const S = store.settings; $('quickSub').textContent = `${S.teamSize}v${S.teamSize} · ${S.duration} MIN · ${S.difficulty.toUpperCase()}`;
+  const S = store.settings; $('quickSub').textContent = `${QUICK.teamSize}v${QUICK.teamSize} · ${S.duration} MIN · ${QUICK.difficulty.toUpperCase()}`;
   const a = TEAMS[S.team] || TEAMS.skyline, b = TEAMS[S.opponent === S.team ? 'blaze' : (S.opponent || 'blaze')] || TEAMS.blaze;
   $('menuTitle').innerHTML = `ULTIMATE<br><em>${a.name}</em> vs ${b.name}`;
 }
@@ -733,7 +735,7 @@ document.addEventListener('click', (e) => {
   audio.init(); audio.play('ui');
   const act = b.dataset.act;
   switch (act) {
-    case 'quick': startMatch('match', { ctx: 'quick' }); break;
+    case 'quick': startMatch('match', { ctx: 'quick', settings: { ...QUICK } }); break;
     case 'setup': case 'custom': modes.openCustom(); break;
     case 'practice': startMatch('practice'); break;
     case 'athlete': buildAthlete(); show('menuAthlete'); rebuildPreview(); break;
