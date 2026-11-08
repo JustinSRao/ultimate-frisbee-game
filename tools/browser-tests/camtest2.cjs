@@ -1,0 +1,20 @@
+const { chromium } = require('playwright');
+(async () => {
+  const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  const page = await browser.newPage({ viewport: { width: 480, height: 270 } });
+  const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.route('**/fonts.googleapis.com/**', r => r.abort());
+  await page.addInitScript(() => { localStorage.setItem('wul-ultimate-v1', JSON.stringify({ settings: { graphics: 'low', weatherPreset: 'sunny' } })); });
+  await page.goto('file://' + process.cwd() + '/dist/index.html', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1500);
+  await page.click('[data-act=quick]'); await page.waitForTimeout(800);
+  await page.evaluate(() => { const g = window.__ult.game; g.state = 'live'; g.offense = 1; const h = g.human; h.facing = 0; const o = g.teams[1].athletes[0]; o.pos.x = h.pos.x - 15; o.pos.z = h.pos.z; g.give(o); o.ai.decideT = 999; window.__ult.cam.yaw = 0; });
+  await page.keyboard.press('c'); await page.waitForTimeout(2500);
+  const st = () => page.evaluate(() => { const g = window.__ult.game, h = g.human; return { camYaw: +window.__ult.cam.yaw.toFixed(2), facing: +h.facing.toFixed(2), velDir: h.speedH > 0.3 ? +Math.atan2(h.vel.x, h.vel.z).toFixed(2) : null, speed: +h.speedH.toFixed(2) }; });
+  console.log('disc cam on, idle', await st());
+  await page.keyboard.down('w'); await page.waitForTimeout(2000); console.log('holding W', await st()); await page.keyboard.up('w');
+  await page.waitForTimeout(800);
+  await page.keyboard.down('d'); await page.waitForTimeout(2000); console.log('holding D', await st()); await page.keyboard.up('d');
+  console.log(errs.join('\n'));
+  await browser.close();
+})();

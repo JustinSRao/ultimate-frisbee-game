@@ -1,0 +1,27 @@
+const { chromium } = require('playwright');
+(async () => {
+  const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  const page = await browser.newPage({ viewport: { width: 480, height: 270 } });
+  const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.route('**/fonts.googleapis.com/**', r => r.abort());
+  await page.addInitScript(() => { localStorage.setItem('wul-ultimate-v1', JSON.stringify({ settings: { graphics: 'low', weatherPreset: 'sunny' } })); });
+  await page.goto('file://' + process.cwd() + '/dist/index.html', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1500);
+  await page.click('[data-act=quick]'); await page.waitForTimeout(800);
+  await page.evaluate(() => { const g = window.__ult.game; g.state = 'live'; g.give(g.teams[1].athletes[0]); g.offense = 1; });
+  const st = () => page.evaluate(() => { const h = window.__ult.game.human; return { sprint: window.__ult.input.sprint, sprintE: +h.sprintE.toFixed(1), dive: !!h.dive, y: +h.y.toFixed(2) }; });
+  await page.keyboard.down('w'); await page.waitForTimeout(600);
+  console.log('single W held', await st());
+  await page.keyboard.up('w'); await page.waitForTimeout(100);
+  await page.keyboard.down('w'); await page.keyboard.up('w'); await page.waitForTimeout(80); await page.keyboard.down('w'); await page.waitForTimeout(600);
+  console.log('double-tap W held', await st());
+  await page.keyboard.up('w'); await page.waitForTimeout(100);
+  console.log('W released', await st());
+  await page.keyboard.press('Shift'); await page.waitForTimeout(150);
+  console.log('after Shift', await st());
+  await page.waitForTimeout(1500);
+  await page.keyboard.press(' '); await page.waitForTimeout(100);
+  console.log('after Space', await st());
+  console.log(errs.join('\n'));
+  await browser.close();
+})();

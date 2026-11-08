@@ -1,0 +1,19 @@
+{
+  "name": "wul-ultimate-frisbee",
+  "version": "1.0.0",
+  "description": "WUL Ultimate Frisbee \u2014 3D pixel-art ultimate frisbee game (Three.js)",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test:sim": "node tools/sim/sim6.mjs 5 && node tools/sim/marktest.mjs && node tools/sim/back.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "esbuild": "^0.28.2",
+    "three": "^0.170.0"
+  },
+  "private": true
+}

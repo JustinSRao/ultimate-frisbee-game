@@ -1,0 +1,10 @@
+import { Game } from '../../src/game.js';
+import { DEFAULTS } from '../../src/config.js';
+const n=+process.argv[2]||5; const c={}; let g;
+let recvCatch=0, otherOff=0;
+g = new Game({...DEFAULTS.settings, teamSize:n, weatherPreset: process.argv[3]||'random'}, DEFAULTS.athlete, 'match', (t,d)=>{ if(t==='callout') c[d.text]=(c[d.text]||0)+1;
+ if(t==='catch' && g.throwInfo && !g.throwInfo.isPull && d.a.team===g.throwInfo.team){ if(d.a===g.throwInfo.receiver) recvCatch++; else otherOff++; } });
+g.autoHuman=true;
+for(let i=0;i<60*60*10;i++) g.step(null);
+console.log(n+'v'+n,'throws', g.stats.throws, 'compl', g.stats.completions, (g.stats.completions/g.stats.throws*100).toFixed(0)+'%', 'score',g.teams[0].score,g.teams[1].score, 'recvCatch',recvCatch,'otherOff',otherOff);
+console.log(JSON.stringify(c));
