@@ -105,7 +105,8 @@ export class Room extends DurableObject {
     const R = this.room, p = R.players[pid];
     if (!p) return;
     if (R.status === 'playing' && this.game) {
-      p.goneAt = Date.now();
+      // grace period measured in match time (Workers' Date.now() only advances on I/O)
+      p.goneAt = Date.now(); p.goneGT = this.game.time;
       const a = this.game.setHumanControl(pid, false); // a bot takes over right away
       if (a) this.game.msg(`${a.name} DISCONNECTED — BOT TAKES OVER`, 'warn', 2);
     } else {
@@ -131,10 +132,10 @@ export class Room extends DurableObject {
     } else if (R.status === 'lobby') { p.cfg = cfg; p.name = cfg.name; }
     if (!R.hostId || !R.players[R.hostId]) R.hostId = pid;
     if (R.status === 'playing' && this.game) {
-      if (p.goneAt && Date.now() - p.goneAt > RECONNECT_GRACE_MS) {
+      if (p.goneAt && this.game.time - (p.goneGT ?? this.game.time) > RECONNECT_GRACE_MS / 1000) {
         this.sendTo(ws, { t: 'err', code: 'expired', msg: 'You were away for over 60 s, so a bot kept your spot until the match ends.' }); ws.close(4003, 'expired'); return;
       }
-      p.goneAt = null;
+      p.goneAt = null; p.goneGT = null;
       const a = this.game.setHumanControl(pid, true);
       if (a) this.game.msg(`${a.name} IS BACK`, 'info', 1.6);
       this.sendTo(ws, { t: 'start', roster: rosterOf(this.game), you: pid, code: R.code, tournament: R.tournament ? this.tourneyView() : null });
@@ -261,14 +262,14 @@ export class Room extends DurableObject {
       if (g.over) break;
     }
     // humans gone for good: give up their slot to the bot permanently
-    for (const p of Object.values(R.players)) if (p.goneAt && now - p.goneAt > RECONNECT_GRACE_MS) p.expired = true;
+    for (const p of Object.values(R.players)) if (p.goneAt && g.time - (p.goneGT ?? g.time) > RECONNECT_GRACE_MS / 1000) p.expired = true;
     const snap = snapshot(g, this.events, this.acks); this.events = [];
     const msg = JSON.stringify(snap);
     let live = 0;
     for (const ws of this.ctx.getWebSockets()) { try { ws.send(msg); live++; } catch (e) { } }
     if (g.over && g.stateT > 6 || g.over && !live) { this.endMatch(); return; }
     // nobody connected for 60 s: abandon
-    if (!live) { this.noneSince ||= now; if (now - this.noneSince > RECONNECT_GRACE_MS) this.endMatch(true); }
+    if (!live) { this.noneSince ||= g.time; if (g.time - this.noneSince > RECONNECT_GRACE_MS / 1000) this.endMatch(true); }
     else this.noneSince = 0;
   }
 

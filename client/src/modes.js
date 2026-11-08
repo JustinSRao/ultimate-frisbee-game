@@ -123,8 +123,8 @@ export function initModes(app) {
     err('setupErr', 'Joining…');
     try {
       const info = await roomInfo(code);
-      if (info.status === 'playing') { err('setupErr', 'That match has already started.'); return; }
-      if (info.players >= info.max) { err('setupErr', 'That room is full.'); return; }
+      // a running match: the server lets us back in if we were in it (same player ID, within 60 s)
+      if (info.status !== 'playing' && info.players >= info.max) { err('setupErr', 'That room is full.'); return; }
       setItem('wul-lastcode', code);
       await connect(code);
     } catch (e) { err('setupErr', e.code === 'notfound' ? 'Room not found — check the code.' : e.message || 'Servers busy — try again later.'); }
@@ -134,11 +134,11 @@ export function initModes(app) {
     lobby = null;
     const s = new OnlineSession(code, app.store.athlete, {
       onLobby(m) {
-        lobby = m;
+        const first = !lobby; lobby = m;
         if (m.tournament) saveTourney(m.tournament, true);
         if (app.mode === 'menu') {
           const vis = document.querySelector('.screen.on');
-          if (!vis || ['menuSetup', 'menuTourney', 'menuLobby'].includes(vis.id) && !(vis.id === 'menuSetup' && setupReturn === 'menuLobby')) { renderLobby(); app.show('menuLobby'); }
+          if (first || !vis || ['menuSetup', 'menuTourney', 'menuLobby'].includes(vis.id) && !(vis.id === 'menuSetup' && setupReturn === 'menuLobby')) { renderLobby(); app.show('menuLobby'); err('setupErr', ''); }
           else if (vis.id === 'menuBracket') renderBracket();
         }
         if (vis('menuLobby')) renderLobby();
