@@ -1,13 +1,13 @@
 // Where the online server lives. One place only.
 // Priority: ?server=URL in the page address > saved override > build-time WUL_SERVER_URL > local dev > production default.
-import { getItem, setItem } from './storage.js';
+import { getItem } from './storage.js';
 
-export const PROD_SERVER = 'https://wul-ultimate.nitsuji777.workers.dev';
+export const PROD_SERVER = 'https://wul-ultimate.traveltoolkit-proxy.workers.dev';
 
 export function serverUrl() {
   try {
     const q = new URLSearchParams(location.search).get('server');
-    if (q) { setItem('wul-server', q); return q.replace(/\/$/, ''); }
+    if (q) return q.replace(/\/$/, ''); // this page load only
   } catch (e) { }
   const saved = getItem('wul-server'); if (saved) return saved.replace(/\/$/, '');
   // eslint-disable-next-line no-undef

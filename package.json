@@ -13,7 +13,9 @@
     "test:net": "node tools/net/nettest.mjs",
     "test": "npm run test:sim && npm run build && npm run test:browser",
     "tauri": "tauri",
-    "build:win": "tools\build-windows.cmd"
+    "build:win": "tools\build-windows.cmd",
+    "deploy": "wrangler deploy",
+    "preview": "wrangler dev"
   },
   "keywords": [],
   "author": "",

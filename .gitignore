@@ -16,3 +16,7 @@ test-results/
 *.provisionprofile
 AuthKey_*.p8
 private_keys/
+
+.dev.vars*
+!.dev.vars.example
+!.env.example
