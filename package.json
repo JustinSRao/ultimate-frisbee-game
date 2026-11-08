@@ -1,7 +1,7 @@
 {
   "name": "wul-ultimate-frisbee",
   "version": "1.0.0",
-  "description": "WUL Ultimate Frisbee \u2014 3D pixel-art ultimate frisbee game (Three.js)",
+  "description": "WUL Ultimate Frisbee — 3D pixel-art ultimate frisbee game (Three.js)",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -15,5 +15,8 @@
     "esbuild": "^0.28.2",
     "three": "^0.170.0"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "playwright": "^1.65.0"
+  }
 }
