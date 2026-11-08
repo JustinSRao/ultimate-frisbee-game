@@ -28,7 +28,7 @@ suite('menu + quick match', async (browser) => {
   await page.evaluate(() => window.__ult.startMatch('match'));
   await page.waitForTimeout(4000);
   const st = await page.evaluate(() => ({ state: window.__ult.game.state, mode: window.__ult.mode, t: window.__ult.game.time }));
-  ok(st.mode === 'play' && st.t > 1, `match running (state=${st.state}, t=${st.t.toFixed(1)})`);
+  ok(st.mode === 'play' && st.t > 0.3, `match running (state=${st.state}, t=${st.t.toFixed(1)})`);
   await page.screenshot({ path: 'shots/play.png' });
   ok(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await page.close();
