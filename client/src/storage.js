@@ -16,7 +16,7 @@ export async function initStorage() {
   const T = typeof window !== 'undefined' && window.__TAURI__;
   if (T && T.store && T.store.load) {
     try {
-      tauriStore = await T.store.load('wul-settings.json', { autoSave: 200 });
+      tauriStore = await T.store.load('wul-settings.json', { defaults: {}, autoSave: 200 });
       for (const [k, v] of await tauriStore.entries()) mem.set(k, typeof v === 'string' ? v : JSON.stringify(v));
       return;
     } catch (e) { tauriStore = null; }

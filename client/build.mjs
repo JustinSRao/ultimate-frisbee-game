@@ -24,4 +24,7 @@ for (const out of [path.join(here, 'dist'), path.join(root, 'dist')]) {
   fs.mkdirSync(out, { recursive: true });
   fs.writeFileSync(path.join(out, 'index.html'), html);
 }
+// static extras for the hosted site (privacy policy etc.) go next to client/dist/index.html only
+const pub = path.join(here, 'public');
+if (fs.existsSync(pub)) for (const f of fs.readdirSync(pub)) fs.copyFileSync(path.join(pub, f), path.join(here, 'dist', f));
 console.log('built', (html.length / 1024).toFixed(0) + ' KB');

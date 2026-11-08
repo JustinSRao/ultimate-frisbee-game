@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b3f9e"/><stop offset="1" stop-color="#0a1a45"/></linearGradient>
+    <radialGradient id="disc" cx="0.4" cy="0.35" r="0.75"><stop offset="0" stop-color="#ffffff"/><stop offset="0.7" stop-color="#e9eef8"/><stop offset="1" stop-color="#c9d3e6"/></radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <!-- flight trail -->
+  <path d="M120 760 C 320 640, 520 470, 700 360" fill="none" stroke="#5fa2ff" stroke-width="34" stroke-linecap="round" opacity=".55"/>
+  <path d="M170 820 C 360 700, 540 540, 690 430" fill="none" stroke="#ffd34d" stroke-width="22" stroke-linecap="round" opacity=".7"/>
+  <!-- disc (tilted ellipse) -->
+  <g transform="rotate(-18 640 330)">
+    <ellipse cx="640" cy="350" rx="250" ry="92" fill="#8c9ab8"/>
+    <ellipse cx="640" cy="330" rx="250" ry="92" fill="url(#disc)"/>
+    <ellipse cx="640" cy="330" rx="200" ry="70" fill="none" stroke="#1f56d6" stroke-width="14"/>
+    <ellipse cx="640" cy="330" rx="120" ry="40" fill="#e0322f" opacity=".9"/>
+  </g>
+  <!-- wordmark -->
+  <text x="512" y="880" text-anchor="middle" font-family="Saira Condensed, Impact, Arial Narrow, sans-serif" font-weight="800" font-size="330" letter-spacing="18" fill="#ffffff" stroke="#08142f" stroke-width="10" paint-order="stroke">WUL</text>
+</svg>

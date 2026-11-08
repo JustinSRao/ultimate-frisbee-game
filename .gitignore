@@ -13,3 +13,6 @@ apps/tauri/src-tauri/gen/schemas/
 *.mobileprovision
 *.key
 test-results/
+*.provisionprofile
+AuthKey_*.p8
+private_keys/

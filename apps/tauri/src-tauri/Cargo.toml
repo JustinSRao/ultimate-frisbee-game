@@ -1,0 +1,26 @@
+[package]
+name = "wul-ultimate"
+version = "1.0.0"
+description = "WUL Ultimate - 3D ultimate frisbee"
+authors = ["JustinSRao"]
+edition = "2021"
+publish = false
+
+[lib]
+name = "wul_ultimate_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-store = "2"
+serde_json = "1"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
