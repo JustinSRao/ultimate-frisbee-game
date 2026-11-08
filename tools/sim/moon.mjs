@@ -1,5 +1,5 @@
-import { Game } from '../../src/game.js';
-import { DEFAULTS } from '../../src/config.js';
+import { Game } from '../../shared/game.js';
+import { DEFAULTS } from '../../shared/config.js';
 const g = new Game({ ...DEFAULTS.settings, teamSize: 5, weatherPreset: 'sunny' }, DEFAULTS.athlete, 'match', () => {});
 g.state = 'live'; const h = g.human, mate = g.teams[0].athletes[1];
 h.pos = { x: 0, z: 0 }; for (const o of g.teams[1].athletes) o.pos = { x: 0, z: 10 };

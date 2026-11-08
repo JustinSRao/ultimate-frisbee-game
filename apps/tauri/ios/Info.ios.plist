@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Keys to merge into gen/apple/<app>_iOS/Info.plist after `tauri ios init` (done on the Mac). -->
+<plist version="1.0">
+<dict>
+  <key>CFBundleDisplayName</key>
+  <string>WUL Ultimate</string>
+  <!-- iPhone: landscape only -->
+  <key>UISupportedInterfaceOrientations</key>
+  <array>
+    <string>UIInterfaceOrientationLandscapeLeft</string>
+    <string>UIInterfaceOrientationLandscapeRight</string>
+  </array>
+  <!-- iPad: landscape too (the game UI is built for wide screens) -->
+  <key>UISupportedInterfaceOrientations~ipad</key>
+  <array>
+    <string>UIInterfaceOrientationLandscapeLeft</string>
+    <string>UIInterfaceOrientationLandscapeRight</string>
+  </array>
+  <key>UIRequiresFullScreen</key>
+  <true/>
+  <key>UIStatusBarHidden</key>
+  <true/>
+  <key>UIViewControllerBasedStatusBarAppearance</key>
+  <false/>
+  <!-- Export compliance: only standard HTTPS/WSS (exempt) -->
+  <key>ITSAppUsesNonExemptEncryption</key>
+  <false/>
+  <key>LSApplicationCategoryType</key>
+  <string>public.app-category.sports-games</string>
+</dict>
+</plist>

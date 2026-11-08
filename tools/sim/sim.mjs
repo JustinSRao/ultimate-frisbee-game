@@ -1,5 +1,5 @@
-import { Game, DT } from '../../src/game.js';
-import { DEFAULTS } from '../../src/config.js';
+import { Game, DT } from '../../shared/game.js';
+import { DEFAULTS } from '../../shared/config.js';
 globalThis.localStorage = undefined;
 for (const n of [2,5,7]) {
 const ev = {}; const log=[];

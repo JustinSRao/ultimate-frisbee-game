@@ -1,5 +1,5 @@
-import { Game } from '../../src/game.js';
-import { DEFAULTS, TEAM_KEYS, kitsClash } from '../../src/config.js';
+import { Game } from '../../shared/game.js';
+import { DEFAULTS, TEAM_KEYS, kitsClash } from '../../shared/config.js';
 let clashes = 0;
 for (const a of TEAM_KEYS) for (const b of TEAM_KEYS) if (a !== b && kitsClash(a, b)) clashes++;
 console.log('teams', TEAM_KEYS.length, 'clashing pairs (use away kit):', clashes);

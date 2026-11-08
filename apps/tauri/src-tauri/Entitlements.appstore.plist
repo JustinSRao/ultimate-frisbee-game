@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Mac App Store build only (see tauri.appstore.conf.json). Minimal App Sandbox:
+     outgoing network connections to the game server, nothing else.
+     TEAM_ID is filled in on the Mac (see prompt_for_mac.md). -->
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.app-sandbox</key>
+  <true/>
+  <key>com.apple.security.network.client</key>
+  <true/>
+  <key>com.apple.application-identifier</key>
+  <string>TEAM_ID.com.justinsrao.ultimatefrisbee</string>
+  <key>com.apple.developer.team-identifier</key>
+  <string>TEAM_ID</string>
+</dict>
+</plist>

@@ -1,5 +1,5 @@
-import { Game, GOAL_CELEBRATION } from '../../src/game.js';
-import { DEFAULTS } from '../../src/config.js';
+import { Game, GOAL_CELEBRATION } from '../../shared/game.js';
+import { DEFAULTS } from '../../shared/config.js';
 const g = new Game({ ...DEFAULTS.settings, teamSize: 5, weatherPreset: 'sunny' }, DEFAULTS.athlete, 'match', () => {});
 g.state = 'live'; const h = g.human, mate = g.teams[0].athletes[1];
 g.scoreGoal(h, mate);

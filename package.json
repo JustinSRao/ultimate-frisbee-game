@@ -1,12 +1,21 @@
 {
   "name": "wul-ultimate-frisbee",
   "version": "1.0.0",
-  "description": "WUL Ultimate Frisbee \u2014 3D pixel-art ultimate frisbee game (Three.js)",
+  "description": "WUL Ultimate Frisbee — 3D pixel-art ultimate frisbee game (Three.js)",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "node build.mjs",
-    "test:sim": "node tools/sim/sim6.mjs 5 && node tools/sim/marktest.mjs && node tools/sim/back.mjs"
+    "build": "node client/build.mjs",
+    "dev:client": "node tools/dev-client.mjs",
+    "dev:server": "wrangler dev --config server/wrangler.toml",
+    "test:sim": "node tools/sim/sim6.mjs 5 && node tools/sim/marktest.mjs && node tools/sim/back.mjs",
+    "test:browser": "node tools/browser-tests/run.cjs",
+    "test:net": "node tools/net/nettest.mjs",
+    "test": "npm run test:sim && npm run build && npm run test:browser",
+    "tauri": "tauri",
+    "build:win": "tools\build-windows.cmd",
+    "deploy": "wrangler deploy",
+    "preview": "wrangler dev"
   },
   "keywords": [],
   "author": "",
@@ -15,5 +24,10 @@
     "esbuild": "^0.28.2",
     "three": "^0.170.0"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.4",
+    "playwright": "^1.65.0",
+    "wrangler": "^4.158.0"
+  }
 }

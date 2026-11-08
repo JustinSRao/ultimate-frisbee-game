@@ -1,5 +1,5 @@
-import { Game } from '../../src/game.js';
-import { DEFAULTS } from '../../src/config.js';
+import { Game } from '../../shared/game.js';
+import { DEFAULTS } from '../../shared/config.js';
 const log=[];
 const g = new Game({...DEFAULTS.settings}, DEFAULTS.athlete, 'practice', (t,d)=>{ if(t==='callout'||t==='throw'||t==='catch') log.push(t+':'+(d.text||d.a?.name)); });
 const h=g.human; const r=g.teams[0].athletes[1];

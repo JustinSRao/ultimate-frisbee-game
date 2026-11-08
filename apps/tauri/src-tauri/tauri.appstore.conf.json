@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "macOS": {
+      "entitlements": "./Entitlements.appstore.plist",
+      "minimumSystemVersion": "12.0",
+      "files": {
+        "embedded.provisionprofile": "./profiles/WUL_Ultimate_Mac_App_Store.provisionprofile"
+      }
+    }
+  }
+}

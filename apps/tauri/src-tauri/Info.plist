@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Merged into the macOS app's Info.plist by Tauri. -->
+<plist version="1.0">
+<dict>
+  <!-- Export compliance: the app only uses standard HTTPS/WSS (OS-provided TLS), which is exempt. -->
+  <key>ITSAppUsesNonExemptEncryption</key>
+  <false/>
+  <!-- App Store category: Games / Sports -->
+  <key>LSApplicationCategoryType</key>
+  <string>public.app-category.sports-games</string>
+</dict>
+</plist>
