@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import * as T from './textures.js';
-import { mulberry } from './config.js';
+import { mulberry } from '../../shared/config.js';
 import { toon } from './materials.js';
 import { voxelize } from './voxel.js';
 

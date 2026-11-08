@@ -2,7 +2,7 @@
 // PROCEDURAL PIXEL-ART TEXTURES (canvas generated, no external assets)
 // ============================================================================
 import * as THREE from 'three';
-import { mulberry } from './config.js';
+import { mulberry } from '../../shared/config.js';
 
 export function canvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
 export function tex(c, opts = {}) {

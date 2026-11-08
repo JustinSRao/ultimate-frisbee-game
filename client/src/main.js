@@ -5,10 +5,11 @@ import * as THREE from 'three';
 import { Stadium } from './stadium.js';
 import { AthleteView } from './athleteView.js';
 import { PixelPipeline } from './post.js';
-import { Game, DT } from './game.js';
+import { Game, DT } from '../../shared/game.js';
 import { Audio } from './audio.js';
-import { TEAMS, TEAM_KEYS, teamLogo, DEFAULTS, loadSaved, save, SKIN_TONES, HAIR_COLORS, HAIR_STYLES, WIND_DIRS, makeAttrs } from './config.js';
-import { MS_TO_MPH } from './weather.js';
+import { loadSaved, save } from './storage.js';
+import { TEAMS, TEAM_KEYS, teamLogo, DEFAULTS, SKIN_TONES, HAIR_COLORS, HAIR_STYLES, WIND_DIRS, makeAttrs } from '../../shared/config.js';
+import { MS_TO_MPH } from '../../shared/weather.js';
 import { discTopTexture, arrowTexture, drawPortrait } from './textures.js';
 import { voxelize, sampler } from './voxel.js';
 

@@ -5,3 +5,11 @@ shots/
 .dev.vars
 .wrangler/
 target/
+client/dist/
+apps/tauri/src-tauri/target/
+apps/tauri/src-tauri/gen/schemas/
+*.pem
+*.p12
+*.mobileprovision
+*.key
+test-results/

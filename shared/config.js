@@ -127,22 +127,6 @@ export function botNames(rng, n) {
   return out;
 }
 
-export function loadSaved() {
-  const out = { athlete: { ...DEFAULTS.athlete }, settings: { ...DEFAULTS.settings } };
-  try {
-    const raw = localStorage.getItem('wul-ultimate-v1');
-    if (raw) {
-      const j = JSON.parse(raw);
-      Object.assign(out.athlete, j.athlete || {});
-      Object.assign(out.settings, j.settings || {});
-    }
-  } catch (e) { /* storage unavailable */ }
-  return out;
-}
-export function save(state) {
-  try { localStorage.setItem('wul-ultimate-v1', JSON.stringify({ athlete: state.athlete, settings: state.settings })); } catch (e) { }
-}
-
 export function mulberry(seed) {
   let a = seed >>> 0;
   return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };

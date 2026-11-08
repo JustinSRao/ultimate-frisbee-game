@@ -5,8 +5,13 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "node build.mjs",
-    "test:sim": "node tools/sim/sim6.mjs 5 && node tools/sim/marktest.mjs && node tools/sim/back.mjs"
+    "build": "node client/build.mjs",
+    "dev:client": "node tools/dev-client.mjs",
+    "dev:server": "wrangler dev --config server/wrangler.toml",
+    "test:sim": "node tools/sim/sim6.mjs 5 && node tools/sim/marktest.mjs && node tools/sim/back.mjs",
+    "test:browser": "node tools/browser-tests/run.cjs",
+    "test:net": "node tools/net/nettest.mjs",
+    "test": "npm run test:sim && npm run build && npm run test:browser"
   },
   "keywords": [],
   "author": "",

@@ -1,5 +1,5 @@
-import { Game } from '../../src/game.js';
-import { DEFAULTS } from '../../src/config.js';
+import { Game } from '../../shared/game.js';
+import { DEFAULTS } from '../../shared/config.js';
 const n=+process.argv[2]||5; const c={}; let g;
 let recvCatch=0, otherOff=0;
 g = new Game({...DEFAULTS.settings, teamSize:n, weatherPreset: process.argv[3]||'random'}, DEFAULTS.athlete, 'match', (t,d)=>{ if(t==='callout') c[d.text]=(c[d.text]||0)+1;

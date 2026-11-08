@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { curlTexture, jerseyWrap, shortsWrap, faceTexture, skinSideTexture, sleeveTexture, shortsLegTexture, sockTexture, shoeTexture } from './textures.js';
 import { toon } from './materials.js';
-import { mulberry } from './config.js';
+import { mulberry } from '../../shared/config.js';
 
 const G = {};
 function geo(key, fn) { return G[key] || (G[key] = fn()); }

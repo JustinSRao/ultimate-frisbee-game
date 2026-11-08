@@ -1,5 +1,5 @@
-import { Game } from '../../src/game.js';
-import { DEFAULTS } from '../../src/config.js';
+import { Game } from '../../shared/game.js';
+import { DEFAULTS } from '../../shared/config.js';
 const c = {}; let incoming = 0;
 for (let k = 0; k < 60; k++) {
   let res = null;

@@ -1,5 +1,5 @@
-import { Game } from '../../src/game.js';
-import { DEFAULTS } from '../../src/config.js';
+import { Game } from '../../shared/game.js';
+import { DEFAULTS } from '../../shared/config.js';
 function trial(mode, kind, delay) {
   let res = null;
   const g = new Game({ ...DEFAULTS.settings, teamSize: 2, weatherPreset: 'sunny' }, DEFAULTS.athlete, 'match', (t, d) => {
